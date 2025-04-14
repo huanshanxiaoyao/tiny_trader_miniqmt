@@ -1,0 +1,84 @@
+2025-04-14 09:56:44,349 - trading - INFO - 【软件终端连接成功！】
+2025-04-14 09:56:44,349 - trading - INFO - 【账户信息订阅成功！】
+2025-04-14 09:56:44,349 - trading - INFO - ------------------【账户信息】------------------
+2025-04-14 09:56:44,350 - trading - INFO - 总资产: 125146.11
+2025-04-14 09:56:44,350 - trading - INFO - 持仓市值: 0.0
+2025-04-14 09:56:44,350 - trading - INFO - 可用资金: 72813.11
+2025-04-14 09:56:44,350 - trading - INFO - 冻结资金: 0.0
+2025-04-14 09:56:44,353 - trading - INFO - ------------------【当日汇总】------------------
+2025-04-14 09:56:44,353 - trading - INFO - 委托个数：0 成交个数：0 持仓数量：4
+2025-04-14 09:56:44,353 - trading - INFO - ------------------【订单信息】------------------
+2025-04-14 09:56:44,353 - trading - INFO - 无委托信息
+2025-04-14 09:56:44,353 - trading - INFO - ------------------【成交信息】------------------
+2025-04-14 09:56:44,353 - trading - INFO - 无成交信息
+2025-04-14 09:56:44,353 - trading - INFO - ------------------【持仓信息】------------------
+2025-04-14 09:56:44,359 - trading - INFO -         证券代码  持仓数量  可用数量  冻结数量       开仓价格  持仓市值  在途股份  昨夜持股
+0  832491.BJ   700   700     0  29.111914   0.0     0   700
+1  832522.BJ   500   500     0  53.720820   0.0     0   500
+2  835174.BJ   100   100     0  27.120300   0.0     0   100
+3  836942.BJ   100   100     0  15.450200   0.0     0   100
+2025-04-14 10:53:36,662 - trading - INFO - 交易程序启动时间: 2025-04-14 10:53:36.662336
+2025-04-14 10:53:36,752 - trading - INFO - 【软件终端连接成功！】
+2025-04-14 10:53:36,752 - trading - INFO - 【账户信息订阅成功！】
+2025-04-14 10:53:36,752 - trading - INFO - 初始化股票对象...
+2025-04-14 10:53:36,752 - trading - INFO - 创建股票对象: 832491.BJ
+2025-04-14 10:53:36,752 - trading - INFO - 创建股票对象: 832522.BJ
+2025-04-14 10:53:36,753 - trading - INFO - 创建股票对象: 835174.BJ
+2025-04-14 10:53:36,753 - trading - INFO - 创建股票对象: 836942.BJ
+2025-04-14 10:53:36,753 - trading - INFO - 创建股票对象: 920116.BJ
+2025-04-14 10:53:36,753 - trading - INFO - 创建股票对象: 839493.BJ
+2025-04-14 10:53:36,753 - trading - INFO - 共创建 6 个股票对象
+2025-04-14 10:53:36,753 - trading - INFO - 初始化策略...
+2025-04-14 10:53:36,753 - trading - INFO - 创建策略: 1001, 目标股票数量: 6
+2025-04-14 10:53:36,753 - trading - INFO - 共创建 1 个策略
+2025-04-14 10:53:36,753 - trading - INFO - 准备历史数据...
+2025-04-14 10:53:36,754 - trading - ERROR - 准备历史数据时发生错误: name 'timedelta' is not defined
+Traceback (most recent call last):
+  File "D:\Users\Jack\xtquant\strategy\strategy1001.py", line 163, in fill_data
+    start_date = (datetime.now() - timedelta(days=10)).strftime('%Y%m%d')
+                                   ^^^^^^^^^
+NameError: name 'timedelta' is not defined
+2025-04-14 10:53:36,756 - trading - WARNING - 警告: 策略 Strategy1001 数据准备失败
+2025-04-14 10:53:36,756 - trading - INFO - ------------------【账户信息】------------------
+2025-04-14 10:53:36,756 - trading - INFO - 总资产: 125038.11
+2025-04-14 10:53:36,756 - trading - INFO - 持仓市值: 0.0
+2025-04-14 10:53:36,757 - trading - INFO - 可用资金: 72813.11
+2025-04-14 10:53:36,757 - trading - INFO - 冻结资金: 0.0
+2025-04-14 10:53:36,759 - trading - INFO - ------------------【当日汇总】------------------
+2025-04-14 10:53:36,760 - trading - INFO - 委托个数：0 成交个数：0 持仓数量：4
+2025-04-14 10:53:36,760 - trading - INFO - ------------------【订单信息】------------------
+2025-04-14 10:53:36,760 - trading - INFO - 无委托信息
+2025-04-14 10:53:36,760 - trading - INFO - ------------------【成交信息】------------------
+2025-04-14 10:53:36,760 - trading - INFO - 无成交信息
+2025-04-14 10:53:36,761 - trading - INFO - ------------------【持仓信息】------------------
+2025-04-14 10:53:36,765 - trading - INFO -         证券代码  持仓数量  可用数量  冻结数量       开仓价格  持仓市值  在途股份  昨夜持股
+0  832491.BJ   700   700     0  29.111914   0.0     0   700
+1  832522.BJ   500   500     0  53.720820   0.0     0   500
+2  835174.BJ   100   100     0  27.120300   0.0     0   100
+3  836942.BJ   100   100     0  15.450200   0.0     0   100
+2025-04-14 10:53:36,766 - trading - INFO - 订阅行情: ['832491.BJ', '832522.BJ', '835174.BJ', '836942.BJ', '920116.BJ', '839493.BJ']
+2025-04-14 10:53:36,772 - trading - ERROR - 程序异常终止: cannot encode object: <function on_tick_data at 0x000002877FBE0AE0>, of type: <class 'function'>
+Traceback (most recent call last):
+  File "D:\Users\Jack\xtquant\main.py", line 152, in main
+    xtdata.subscribe_quote(stock_codes, on_tick_data)
+  File "D:\Apps\Python3\Lib\site-packages\xtquant\xtdata.py", line 1088, in subscribe_quote
+    return subscribe_quote2(stock_code, period, start_time, end_time, count, None, callback)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Apps\Python3\Lib\site-packages\xtquant\xtdata.py", line 1125, in subscribe_quote2
+    return client.subscribe_quote(_BSON_.BSON.encode(meta), _BSON_.BSON.encode(region), callback)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Apps\Python3\Lib\site-packages\xtquant\xtbson\bson37\__init__.py", line 1353, in encode
+    return cls(encode(document, check_keys, codec_options))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Apps\Python3\Lib\site-packages\xtquant\xtbson\bson37\__init__.py", line 1021, in encode
+    return _dict_to_bson(document, check_keys, codec_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Apps\Python3\Lib\site-packages\xtquant\xtbson\bson37\__init__.py", line 974, in _dict_to_bson
+    elements.append(_element_to_bson(key, value, check_keys, opts))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Apps\Python3\Lib\site-packages\xtquant\xtbson\bson37\__init__.py", line 961, in _element_to_bson
+    return _name_value_to_bson(name, value, check_keys, opts)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Apps\Python3\Lib\site-packages\xtquant\xtbson\bson37\__init__.py", line 947, in _name_value_to_bson
+    raise InvalidDocument("cannot encode object: %r, of type: %r" % (value, type(value)))
+xtquant.xtbson.bson37.errors.InvalidDocument: cannot encode object: <function on_tick_data at 0x000002877FBE0AE0>, of type: <class 'function'>
