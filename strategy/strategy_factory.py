@@ -1,4 +1,5 @@
 from strategy.strategy1001 import Strategy1001
+from strategy.strategy1002 import Strategy1002
 from config import STRATEGY_CONFIG
 from my_stock import MyStock
 
@@ -20,5 +21,7 @@ class StrategyFactory:
         # 创建对应策略实例
         if strategy_id == 1001:
             return Strategy1001(target_codes)
+        elif strategy_id == 1002:
+            return Strategy1002(target_codes)
         else:
             raise ValueError(f"未知的策略ID: {strategy_id}")

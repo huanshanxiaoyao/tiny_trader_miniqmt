@@ -8,9 +8,10 @@ class Strategy1001(BaseStrategy):
     策略目标：利用周期内股价的波动，低点买入，高点时卖出，降低持仓成本，赚取收益
     策略假设：选中的股票中长线稳健向上
     """
-    def __init__(self, stocks):
-        super().__init__(stocks)
+    def __init__(self, codes):
+        super().__init__(codes)
         self.code2avg = {}
+        self.code2daily = {}
         # 策略参数
         self.buy_threshold = 0.95             # 下跌买入阈值
         self.sell_threshold = 1.05            # 上涨卖出阈值
@@ -33,11 +34,10 @@ class Strategy1001(BaseStrategy):
         """
         market_tick = ticks.get(self.market_index)
         # 检查大盘状况
-        market_status = self._check_market(market_tick)
-        if not market_status:
+        market_good, market_rise = self._check_market(market_tick)
+        if not market_rise:
             return []
 
-        market_good, market_rise = market_status
         trade_signals = []
         now = int(datetime.now().timestamp())
 
@@ -163,7 +163,9 @@ class Strategy1001(BaseStrategy):
             start_date = (datetime.now() - timedelta(days=10)).strftime('%Y%m%d')
             
             # 获取历史均价
-            self.code2avg = data_provider.get_daily_avg(code_list, start_date, end_date)
+            self.code2daily = data_provider.get_daily_data(code_list, start_date, end_date)
+            # 计算历史均价
+            self.code2avg = {code: sum(prices) / len(prices) for code, prices in self.code2daily.items() if prices}
             
             # 检查数据是否获取成功
             if not self.code2avg:
@@ -177,19 +179,3 @@ class Strategy1001(BaseStrategy):
         except Exception as e:
             logger.error(f"准备历史数据时发生错误: {e}", exc_info=True)
             return False
-
-    def _check_market(self, market_tick):
-        """检查大盘状况"""
-        if not market_tick:
-            return None
-            
-        # 计算大盘涨跌幅
-        if market_tick.get('open', 0) <= 0:
-            return None
-            
-        market_rise = (market_tick['lastPrice'] / market_tick['open'] - 1) * 100
-        
-        # 判断大盘状况
-        market_good = market_rise > -2  # 大盘跌幅小于2%认为是好的
-        
-        return market_good, market_rise

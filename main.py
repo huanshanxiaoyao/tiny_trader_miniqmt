@@ -5,7 +5,8 @@ from mini_trader import MiniTrader
 from data_provider import DataProvider
 from risk_manager import RiskManager
 from strategy.strategy_factory import StrategyFactory
-from config import ACCOUNT_ID, TRADER_PATH, STRATEGY_CONFIG, DATA_CONFIG, BASKET1
+from config import ACCOUNT_ID, TRADER_PATH, STRATEGY_CONFIG, DATA_CONFIG
+from config import BASKET1, BASKET2, BASKET3, CODE2RELATED
 from my_stock import MyStock
 from logger import logger
 import os
@@ -26,9 +27,17 @@ def init_stocks():
     """初始化股票对象"""
     global id2stock
     logger.info("初始化股票对象...")
-    
+
+    active_codes = []
+    active_codes.extend(BASKET1)
+    active_codes.extend(BASKET2)
+    active_codes.extend(BASKET3)
+    for values in CODE2RELATED.values():
+        active_codes.extend(values)
+    logger.info(f"活跃股票数量: {active_codes}")
+  
     # 为配置中的股票创建MyStock对象
-    for code in BASKET1:
+    for code in active_codes:
         if code not in id2stock:
             id2stock[code] = MyStock(code)
             logger.info(f"创建股票对象: {code}")
@@ -130,16 +139,17 @@ def main():
         # 初始化风险管理器
         risk_manager = RiskManager()
         
+        
         # 初始化股票对象
         if not init_stocks():
             logger.error("初始化股票对象失败，程序退出")
             return
-        
+
         # 初始化策略
         if not init_strategies():
             logger.error("初始化策略失败，程序退出")
             return
-        
+
         # 准备历史数据
         if not prepare_data():
             logger.error("准备历史数据失败，程序退出")
@@ -150,6 +160,7 @@ def main():
   
         # 订阅行情
         stock_codes = list(id2stock.keys())
+        stock_codes.append('899050.BJ')
         logger.info(f"订阅行情: {stock_codes}")
         xtdata.subscribe_whole_quote(stock_codes, callback=on_tick_data)
         

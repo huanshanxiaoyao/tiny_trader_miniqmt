@@ -26,3 +26,19 @@ class BaseStrategy(ABC):
         :return: (交易类型, 交易数量) 或 None
         """
         pass
+
+    def _check_market(self, market_tick):
+        """检查大盘状况, 可复用也可以覆盖"""
+        if not market_tick:
+            return None,None
+            
+        # 计算大盘涨跌幅
+        if market_tick.get('open', 0) <= 0:
+            return None,None
+            
+        market_rise = (market_tick['lastPrice'] / market_tick['open'] - 1) * 100
+        
+        # 判断大盘状况
+        market_good = market_rise > -2  # 大盘跌幅小于2%认为是好的
+        
+        return market_good, market_rise

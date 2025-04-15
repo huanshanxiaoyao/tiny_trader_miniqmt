@@ -10,7 +10,7 @@ class DataProvider:
     def __init__(self):
         pass
 
-    def get_daily_avg(self, code_list, start_date, end_date):
+    def get_daily_data(self, code_list, start_date, end_date):
         """
         获取指定日期范围内的股票日均价
         :param code_list: 股票代码列表
@@ -32,8 +32,7 @@ class DataProvider:
             end_time=end_date,
         )
 
-        # 计算均价
-        code2avg = {}
+        code2daily = {}
         if data is not None and 'close' in data:
             close_data = data['close']
             # 对每个股票代码计算均价
@@ -42,17 +41,17 @@ class DataProvider:
                     prices = close_data.loc[code].values
                     valid_prices = prices[prices > 0]  # 过滤无效价格
                     if len(valid_prices) > 0:
-                        code2avg[code] = float(valid_prices.mean())
+                        code2daily[code] = valid_prices.tolist()  # 将 numpy array 转换为 list
                     else:
-                        code2avg[code] = 0
+                        code2daily[code] = []
                         logger.warning(f"{code} 在指定时间段内没有有效的价格数据")
                 else:
-                    code2avg[code] = 0
+                    code2daily[code] = []
                     logger.warning(f"{code} 未在数据中找到")
         else:
             logger.error("获取历史数据失败")
 
-        return code2avg
+        return code2daily
 
 
 if __name__ == '__main__':
@@ -60,5 +59,6 @@ if __name__ == '__main__':
     code_list = ["000001.SZ", "600000.SH","839493.BJ"]
     start_date = "20250301"
     end_date = "20250401"
-    avg_prices = data_provider.get_daily_avg(code_list, start_date, end_date)
-    print(avg_prices)
+    prices = data_provider.get_daily_data(code_list, start_date, end_date)
+    for code, prices in prices.items():
+        print(f"{code} prices: {type(prices)}, {prices}")

@@ -28,10 +28,13 @@ BASKET3 = ["430139.BJ","835185.BJ","832982.BJ",
 
 # 策略配置
 STRATEGY_CONFIG = {
-    "enabled_strategies": [1001],  # 启用的策略ID列表
+    "enabled_strategies": [1001, 1002],  # 启用的策略ID列表
     "strategy_params": {
         1001: {
             "target_codes": BASKET1  # 策略目标股票代码
+        },
+        1002: {
+            "target_codes": BASKET2  # 策略目标股票代码
         }
     }
 }
