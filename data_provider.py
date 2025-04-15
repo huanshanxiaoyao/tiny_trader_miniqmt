@@ -19,6 +19,7 @@ class DataProvider:
         :return: dict, key为股票代码，value为均价
         """
         # 确保数据下载
+        logger.info(f"尝试下载历史数据{code_list} {start_date} {end_date}")
         for code in code_list:
             xtdata.download_history_data(code, "1d", start_date, end_date)
 
@@ -28,21 +29,26 @@ class DataProvider:
             code_list,
             period='1d',
             start_time=start_date,
-            end_time=end_date
+            end_time=end_date,
         )
 
         # 计算均价
         code2avg = {}
         if data is not None and 'close' in data:
             close_data = data['close']
+            # 对每个股票代码计算均价
             for code in code_list:
-                prices = close_data.get(code, [])
-                valid_prices = [p for p in prices if p > 0]  # 过滤无效价格
-                if valid_prices:
-                    code2avg[code] = sum(valid_prices) / len(valid_prices)
+                if code in close_data.index:
+                    prices = close_data.loc[code].values
+                    valid_prices = prices[prices > 0]  # 过滤无效价格
+                    if len(valid_prices) > 0:
+                        code2avg[code] = float(valid_prices.mean())
+                    else:
+                        code2avg[code] = 0
+                        logger.warning(f"{code} 在指定时间段内没有有效的价格数据")
                 else:
                     code2avg[code] = 0
-                    logger.warning(f"{code} 在指定时间段内没有有效的价格数据")
+                    logger.warning(f"{code} 未在数据中找到")
         else:
             logger.error("获取历史数据失败")
 
@@ -51,8 +57,8 @@ class DataProvider:
 
 if __name__ == '__main__':
     data_provider = DataProvider()
-    code_list = ['000001.SZ', '600000.SH']
-    start_date = '20240101'
-    end_date = '20240501'
+    code_list = ["000001.SZ", "600000.SH","839493.BJ"]
+    start_date = "20250301"
+    end_date = "20250401"
     avg_prices = data_provider.get_daily_avg(code_list, start_date, end_date)
     print(avg_prices)

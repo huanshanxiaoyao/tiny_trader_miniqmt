@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from logger import logger  
 from .base_strategy import BaseStrategy
 

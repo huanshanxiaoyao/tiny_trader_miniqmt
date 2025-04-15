@@ -1,4 +1,5 @@
 from datetime import datetime
+from config import CODE2RELATED
 
 class MyStock:
     """
@@ -9,7 +10,6 @@ class MyStock:
         self.code = code
         self.current_position = 0  # 当前持仓数量
         self.cost_price = 0        # 持仓成本
-        self.related_industry_codes = []  # 相关行业股票代码
         self.last_buy_time = None  # 最后买入时间
         self.last_sell_time = None  # 最后卖出时间
         
@@ -22,6 +22,9 @@ class MyStock:
         # 行情数据
         self.current_price = 0                # 当前价格
         self.avg_price_10d = 0                # 10日均价
+
+        # 从配置文件获取相关行业股票代码
+        self.related_industry_codes = CODE2RELATED.get(code, [])
 
     def update_price(self, tick_data):
         """更新股票当前行情数据"""

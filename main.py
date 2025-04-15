@@ -83,7 +83,9 @@ def on_tick_data(ticks):
     :param ticks: 股票行情数据字典
     """
     global strategies, risk_manager, trader
-    
+    logger.info(f"接收行情数据: 数量={len(ticks)}, 股票代码列表={list(ticks.keys())}")
+    for code, tick in ticks.items():
+        logger.info(f"{code} 最新价: {tick}")
     # 遍历所有策略
     all_signals = []
     for strategy in strategies:
@@ -145,11 +147,11 @@ def main():
         
         # 打印账户信息
         trader.print_summary()
-        
+  
         # 订阅行情
         stock_codes = list(id2stock.keys())
         logger.info(f"订阅行情: {stock_codes}")
-        xtdata.subscribe_quote(stock_codes, on_tick_data)
+        xtdata.subscribe_whole_quote(stock_codes, callback=on_tick_data)
         
         # 主循环，保持程序运行
         while True:
