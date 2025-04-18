@@ -151,19 +151,20 @@ class MiniTrader:
         # 获取账户可用资金
         asset = self.trader.query_stock_asset(self.account)
         available_cash = asset.cash
-        
-        # 确定买入金额
-        buy_amount = min(amount, available_cash)
+        logger.info(f"买入 {stock_code}: 金额{amount}, 价格类型{price_type}, 价格{price},  备注{remark}, 可用资金{available_cash}")
+
         
         # 获取当前价格
         if price_type == xtconstant.LATEST_PRICE:
+            logger.info(f"获取 {stock_code} 最新价格 {type(stock_code)}")
             full_tick = xtdata.get_full_tick([stock_code])
             current_price = full_tick[stock_code]['lastPrice']
         else:
             current_price = price
-            
-        # 计算买入数量（向下取整到100的整数倍）
-        buy_volume = int(buy_amount / current_price / 100) * 100
+        
+                # 确定买入金额
+        buy_amount = min(amount, available_cash/current_price)
+        buy_volume = buy_amount
         
         if buy_volume <= 0:
             logger.warning(f"可买数量为0，可用资金：{available_cash}，目标金额：{amount}")

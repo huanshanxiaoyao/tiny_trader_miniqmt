@@ -10,10 +10,12 @@ class BaseStrategy(ABC):
         self.data_ready = False                        # 数据准备状态标志
         
     @abstractmethod
-    def fill_data(self, data_provider):
+    def fill_data(self, data_provider, start_time=None, end_time=None):
         """
         准备策略所需的历史数据或离线数据
         :param data_provider: DataProvider对象，提供数据获取接口
+        :param start_time: 开始时间，可选参数
+        :param end_time: 结束时间，可选参数
         :return: bool, 数据准备是否成功
         """
         pass
@@ -40,5 +42,5 @@ class BaseStrategy(ABC):
         
         # 判断大盘状况
         market_good = market_rise > -2  # 大盘跌幅小于2%认为是好的
-        
+        print(f"update index:{market_good},{market_rise}")
         return market_good, market_rise

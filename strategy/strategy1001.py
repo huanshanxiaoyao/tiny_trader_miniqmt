@@ -55,14 +55,14 @@ class Strategy1001(BaseStrategy):
             
             # 判断买入条件
             if self._should_buy(stock, current_price, industry_bad, now):
-                trade_signals.append((stock, 'buy', self.single_buy_amount))
+                trade_signals.append((stock, 'buy', self.single_buy_amount,'str1001'))
                 
             # 判断卖出条件
             elif self._should_sell(stock, current_price, industry_rise, now):
                 sell_amount = min(self.single_buy_amount, 
                                 stock.current_position - self.min_position)
                 if sell_amount > 0:
-                    trade_signals.append((stock, 'sell', sell_amount))
+                    trade_signals.append((stock, 'sell', sell_amount, 'str1001'))
                     
         return trade_signals
 

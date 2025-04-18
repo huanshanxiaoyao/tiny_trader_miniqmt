@@ -17,7 +17,7 @@ class Strategy1002(BaseStrategy):
         # 策略参数
         self.short_period = 5        # 短期均线周期
         self.long_period = 20        # 长期均线周期
-        self.max_position = 1000     # 最大持仓数量
+        self.max_position = 500     # 最大持仓数量
         self.min_position = 100      # 最小持仓数量
         self.single_trade_amount = 200  # 单次交易数量
         self.interval = 300          # 交易间隔（秒）
@@ -32,12 +32,7 @@ class Strategy1002(BaseStrategy):
         :param ticks: 相关股票行情数据字典
         :return: list of (股票对象, 交易类型, 交易数量) 或 空列表
         """
-        # 检查大盘状况
-        market_tick = ticks.get(self.market_index)
-        market_good, market_rise = self._check_market(market_tick)
-        if not market_rise:
-            logger.error("当前大盘不满足交易条件，不进行交易")
-            return []
+        # 移除了大盘检查的代码
             
         trade_signals = []
         now = int(datetime.now().timestamp())
@@ -83,7 +78,7 @@ class Strategy1002(BaseStrategy):
                     if golden_cross and last_signal != 'buy':
                         if self._can_buy(stock, now):
                             logger.info(f"触发买入信号: 股票 {stock.code} 金叉")
-                            trade_signals.append((stock, 'buy', self.single_trade_amount))
+                            trade_signals.append((stock, 'buy', self.single_trade_amount, 'str1002'))
                             self.code2signal[stock.code] = 'buy'
                     
                     # 卖出信号
@@ -93,7 +88,7 @@ class Strategy1002(BaseStrategy):
                             sell_amount = min(self.single_trade_amount, 
                                             stock.current_position - self.min_position)
                             if sell_amount > 0:
-                                trade_signals.append((stock, 'sell', sell_amount))
+                                trade_signals.append((stock, 'sell', sell_amount, 'str1002'))
                                 self.code2signal[stock.code] = 'sell'
         
         return trade_signals
@@ -133,6 +128,7 @@ class Strategy1002(BaseStrategy):
         try:
             # 获取所有目标股票代码
             code_list = [stock.code for stock in self.target_stocks]
+            code_list.append(self.market_index)
             if not code_list:
                 logger.warning("没有目标股票，无法获取历史数据")
                 return False

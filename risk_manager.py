@@ -21,10 +21,10 @@ class RiskManager:
         reviewed_signals = []
         current_time = int(datetime.now().timestamp())
         
-        for stock, trade_type, amount in signals:
+        for stock, trade_type, amount, remark in signals:
             # 这里可以添加风险评估逻辑
             # 如果通过风险评估，则添加到reviewed_signals并更新交易时间
-            reviewed_signals.append((stock, trade_type, amount))
+            reviewed_signals.append((stock, trade_type, amount, remark))
             
             # 更新股票的最后交易时间
             if trade_type == 'buy':

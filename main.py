@@ -6,9 +6,9 @@ from data_provider import DataProvider
 from risk_manager import RiskManager
 from strategy.strategy_factory import StrategyFactory
 from config import ACCOUNT_ID, TRADER_PATH, STRATEGY_CONFIG, DATA_CONFIG
-from config import BASKET1, BASKET2, BASKET3, CODE2RELATED
+from config import BASKET1, BASKET2, BASKET3, CODE2RELATED,SH50
 from my_stock import MyStock
-from logger import logger
+from logger import logger, tick_logger  # 修改导入语句
 import os
 import sys
 
@@ -29,11 +29,11 @@ def init_stocks():
     logger.info("初始化股票对象...")
 
     active_codes = []
-    active_codes.extend(BASKET1)
-    active_codes.extend(BASKET2)
-    active_codes.extend(BASKET3)
-    for values in CODE2RELATED.values():
-        active_codes.extend(values)
+    #active_codes.extend(BASKET1)
+    active_codes.extend(SH50)
+    #active_codes.extend(BASKET3)
+    #for values in CODE2RELATED.values():
+    #    active_codes.extend(values)
     logger.info(f"活跃股票数量: {active_codes}")
   
     # 为配置中的股票创建MyStock对象
@@ -93,8 +93,10 @@ def on_tick_data(ticks):
     """
     global strategies, risk_manager, trader
     logger.info(f"接收行情数据: 数量={len(ticks)}, 股票代码列表={list(ticks.keys())}")
+    #index_ticks = xtdata.get_full_tick(['899050.BJ'])
+    #logger.info(f"指数行情数据: {index_ticks}")
     for code, tick in ticks.items():
-        logger.info(f"{code} 最新价: {tick}")
+        tick_logger.info(f"{code} : {tick}")  # 使用专门的tick_logger
     # 遍历所有策略
     all_signals = []
     for strategy in strategies:
@@ -112,13 +114,13 @@ def on_tick_data(ticks):
         return
     
     # 执行交易
-    for stock, trade_type, amount in reviewed_signals:
+    for stock, trade_type, amount, remark in reviewed_signals:
         if trade_type == 'buy':
-            trader.buy_stock(stock, amount * 100, remark=f'strategy_{trade_type}')
+            ret = trader.buy_stock(stock.code, amount, remark=f'{remark}')
         else:
-            trader.sell_stock(stock, amount, remark=f'strategy_{trade_type}')
+            ret = trader.sell_stock(stock.code, amount, remark=f'{remark}')
         
-        logger.info(f"执行交易: {trade_type} {code} {amount}")
+        logger.info(f"执行交易: {trade_type} {stock.code} {amount}, ret: {ret}")
 
 def main():
     """主函数"""
