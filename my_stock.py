@@ -8,13 +8,13 @@ class MyStock:
     """
     def __init__(self, code):
         self.code = code
-        self.current_position = 0  # 当前持仓数量
-        self.cost_price = 0        # 持仓成本
-        self.last_buy_time = None  # 最后买入时间
-        self.last_sell_time = None  # 最后卖出时间
+        self.last_buy_time = 0  # 最后买入时间
+        self.last_sell_time = 0  # 最后卖出时间
         
         # 持仓信息
         self.current_position = 0             # 当前持仓数量
+        self.free_position = 0                # 可用持仓数量
+        self.open_price = 0                   # 开仓价
         self.cost_price = 0                   # 成本价
         self.market_value = 0                 # 持仓市值
         self.profit_loss = 0                  # 持仓盈亏

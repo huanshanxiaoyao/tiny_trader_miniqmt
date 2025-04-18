@@ -57,10 +57,10 @@ class MiniTrader:
         asset = self.trader.query_stock_asset(self.account)
         if asset:
             return {
-                "总资产": asset.total_asset,
-                "持仓市值": asset.market_value,
-                "可用资金": asset.cash,
-                "冻结资金": asset.frozen_cash
+                "TotalAsset": asset.total_asset,
+                "MarketValue": asset.market_value,
+                "FreeCash": asset.cash,
+                "FrozenCash": asset.frozen_cash
             }
         return None
 
@@ -102,14 +102,14 @@ class MiniTrader:
         positions = self.trader.query_stock_positions(self.account)
         positions_df = pd.DataFrame([
             {
-                "证券代码": position.stock_code,
-                "持仓数量": position.volume,
-                "可用数量": position.can_use_volume,
-                "冻结数量": position.frozen_volume,
-                "开仓价格": position.open_price,
-                "持仓市值": position.market_value,
-                "在途股份": position.on_road_volume,
-                "昨夜持股": position.yesterday_volume
+                "StockCode": position.stock_code,
+                "Volume": position.volume,
+                "FreeVolume": position.can_use_volume,
+                "FrozenVolue": position.frozen_volume,
+                "OpenPrice": position.open_price,
+                "MarketValue": position.market_value,
+                "OnRoadVolume": position.on_road_volume,
+                "YesterdayVolume": position.yesterday_volume
             }
             for position in positions
         ])
@@ -179,7 +179,7 @@ class MiniTrader:
             price_type,
             current_price,
             remark or 'buy',
-            stock_code
+            remark +"_"+ stock_code
         )
 
     def sell_stock(self, stock_code, volume, price_type=xtconstant.LATEST_PRICE, price=-1, remark=''):
@@ -213,7 +213,7 @@ class MiniTrader:
             price_type,
             price,
             remark or 'sell',
-            stock_code
+            remark +"_"+ stock_code
         )
 
 # 使用示例

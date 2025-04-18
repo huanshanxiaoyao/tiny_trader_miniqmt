@@ -56,17 +56,17 @@ BJ50 = [
 
 # 策略配置
 STRATEGY_CONFIG = {
-    "enabled_strategies": [1002],  # 启用的策略ID列表
-    "backtest_strategies": [1003],  # 回测的策略ID列表
+    "enabled_strategies": [1003,1002],  # 启用的策略ID列表
+    "backtest_strategies": [1002],  # 回测的策略ID列表
     "strategy_params": {
         1001: {
             "target_codes": BASKET1  # 策略目标股票代码
         },
         1002: {
-            "target_codes": SH50  # 策略目标股票代码
+            "target_codes": BJ50  # 策略目标股票代码
         },
         1003: {
-            "target_codes": BASKET3  # 策略目标股票代码
+            "target_codes": BJ50  # 策略目标股票代码
         }
     }
 }

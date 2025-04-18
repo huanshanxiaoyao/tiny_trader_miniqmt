@@ -6,7 +6,7 @@ from data_provider import DataProvider
 from risk_manager import RiskManager
 from strategy.strategy_factory import StrategyFactory
 from config import ACCOUNT_ID, TRADER_PATH, STRATEGY_CONFIG, DATA_CONFIG
-from config import BASKET1, BASKET2, BASKET3, CODE2RELATED,SH50
+from config import BASKET1, BASKET2, BASKET3, CODE2RELATED,SH50,BJ50
 from my_stock import MyStock
 from logger import logger, tick_logger  # 修改导入语句
 import os
@@ -28,9 +28,10 @@ def init_stocks():
     global id2stock
     logger.info("初始化股票对象...")
 
-    active_codes = []
+    #TODO 这里需要再思考一下，由于是先注册stock再注册策略，同时为了避免太多浪费，所以还需要一个个集合的hardcord在这里
+    active_codes = [] 
     #active_codes.extend(BASKET1)
-    active_codes.extend(SH50)
+    active_codes.extend(BJ50)
     #active_codes.extend(BASKET3)
     #for values in CODE2RELATED.values():
     #    active_codes.extend(values)
@@ -141,7 +142,6 @@ def main():
         # 初始化风险管理器
         risk_manager = RiskManager()
         
-        
         # 初始化股票对象
         if not init_stocks():
             logger.error("初始化股票对象失败，程序退出")
@@ -166,9 +166,13 @@ def main():
         logger.info(f"订阅行情: {stock_codes}")
         xtdata.subscribe_whole_quote(stock_codes, callback=on_tick_data)
         
-        # 主循环，保持程序运行
+        # 主循环，保持程序运行,且做部分更新等判断
+        round_count = 0
         while True:
+            if round_count % 1000 == 0 or risk_manager.need_rebalance():
+                risk_manager.update_positions(trader.get_account_info(), trader.get_positions(), id2stock)
             time.sleep(0.1)
+            round_count += 1
             
     except KeyboardInterrupt:
         logger.info("\n程序手动终止")

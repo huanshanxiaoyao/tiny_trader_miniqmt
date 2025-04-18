@@ -14,6 +14,7 @@ class Strategy1003(BaseStrategy):
     """
     def __init__(self, codes):
         super().__init__(codes)
+        self.str_remark = "str1003"
         # 历史数据
         self.code2daily = {}  # 股票代码到历史价格的映射
         
@@ -52,16 +53,7 @@ class Strategy1003(BaseStrategy):
             # 更新价格历史并执行策略
             if stock.code in self.code2daily:
                 # 添加当前价格到历史数据
-                prices = self.code2daily[stock.code].copy()
-                prices.append(current_price)
-                
-                # 保留最近的N个价格点
-                max_length = max(self.kdj_period, self.long_period) + 10
-                if len(prices) > max_length:
-                    prices = prices[-max_length:]
-                
-                # 更新历史数据    
-                self.code2daily[stock.code] = prices
+                prices = self.code2daily[stock.code]
                 
                 # 执行策略逻辑
                 signal = self._execute_strategy(stock, prices, current_price)
@@ -94,6 +86,7 @@ class Strategy1003(BaseStrategy):
                 # 执行策略逻辑
                 signal = self._execute_strategy(stock, prices[i:i+self.long_period], current_price)
                 if signal:
+                    #在交易信号中添加idx，方便后续反查交易日期
                     backtest_signals.append(signal + (i+self.long_period,))
 
         return backtest_signals
@@ -102,9 +95,9 @@ class Strategy1003(BaseStrategy):
         """
         执行策略逻辑
         :param stock: 股票对象
-        :param prices: 历史价格序列
+        :param prices: 历史价格序列,不包含当前价格
         :param current_price: 当前价格
-        :return: (股票对象, 交易类型, 交易数量) 或 None
+        :return: (股票对象, 交易类型, 交易数量, 策略标记) 或 None
         """
         if len(prices) < self.long_period:
             logger.warning(f"股票 {stock.code} 历史数据长度不足 {self.long_period} 天，跳过")   
@@ -132,13 +125,13 @@ class Strategy1003(BaseStrategy):
                 logger.info(f"触发卖出信号: 股票 {stock.code} J值={j:.2f} > {self.j_high}, 价格={current_price:.2f} > 75分位数={q3:.2f}")
                 sell_amount = self.single_trade_value // current_price
                 if sell_amount > 0:
-                    return (stock, 'sell', sell_amount)
+                    return (stock, 'sell', sell_amount, self.str_remark)
             
             # 买入信号：J值超卖 + 价格低于中位数
             elif j < self.j_low and current_price < median:
                 logger.info(f"触发买入信号: 股票 {stock.code} J值={j:.2f} < {self.j_low}, 价格={current_price:.2f} < 中位数={median:.2f}")
                 buy_amount = self.single_trade_value // current_price
-                return (stock, 'buy', buy_amount)
+                return (stock, 'buy', buy_amount, self.str_remark)
         
         return None
 

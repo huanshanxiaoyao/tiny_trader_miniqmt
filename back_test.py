@@ -70,7 +70,9 @@ def main():
         
         # 初始化股票对象
         active_codes = []
-        active_codes.extend(BASKET3)#TODO 先设定为Basket2
+        active_codes.extend(SH50)#TODO 
+        active_codes.extend(BJ50)#TODO 
+        active_codes.extend(BASKET2)#TODO 先设定为
         id2stock = init_stocks(active_codes)
         if not id2stock:
             logger.error("初始化股票对象失败，程序退出")

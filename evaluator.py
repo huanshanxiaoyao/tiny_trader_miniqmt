@@ -14,7 +14,7 @@ class Evaluator:
         评估策略的回测效果
         
         :param strategy_name: 策略名称
-        :param signals: 交易信号列表，每个信号为 (股票对象, 交易类型, 交易数量, idx)
+        :param signals: 交易信号列表，每个信号为 (股票对象, 交易类型, 交易数量, 策略标记，idx)
         :param target_stocks: 目标股票列表
         :param code2daily: 股票代码到价格序列的映射字典，用于获取历史价格
         :param trade_days: 交易日列表
@@ -37,7 +37,7 @@ class Evaluator:
         
         # 处理每个交易信号
         for signal in sorted_signals:
-            stock, trade_type, amount, idx = signal
+            stock, trade_type, amount, str_remark, idx = signal
             
             # 获取交易日期和价格（假设在回测数据中可以获取）
             # 这里需要根据实际数据结构调整
