@@ -1,12 +1,15 @@
 import time
 from datetime import datetime
+import argparse
 from xtquant import xtdata
 from mini_trader import MiniTrader
 from data_provider import DataProvider
 from risk_manager import RiskManager
+from local_account import LocalAccount
 from strategy.strategy_factory import StrategyFactory
 from config import ACCOUNT_ID, TRADER_PATH, STRATEGY_CONFIG, DATA_CONFIG
 from config import BASKET1, BASKET2, BASKET3, CODE2RELATED,SH50,BJ50
+from config import BJSE_INDEX, SHSE_INDEX, SZSE_INDEX
 from my_stock import MyStock
 from logger import logger, tick_logger  # 修改导入语句
 import os
@@ -123,15 +126,40 @@ def on_tick_data(ticks):
         
         logger.info(f"执行交易: {trade_type} {stock.code} {amount}, ret: {ret}")
 
-def main():
-    """主函数"""
+# 在main函数中，修改模拟交易部分的代码
+def main(use_sim=False, account_id=ACCOUNT_ID):
+    """
+    主函数
+    :param use_sim: 是否使用模拟交易
+    :param account_id: 交易账户ID
+    """
     global data_provider, risk_manager, trader
     
     logger.info(f"交易程序启动时间: {datetime.now()}")
     
     try:
-        # 初始化交易接口
-        trader = MiniTrader(TRADER_PATH, ACCOUNT_ID)
+        # 根据参数选择使用实盘交易还是模拟交易
+        if use_sim:
+            # 导入模拟交易所和模拟账户
+            from simulate_exchange.sim_account import SimAccount
+            from simulate_exchange.sim_trader import SimTrader
+            from simulate_exchange.sim_config import SIM_ACCOUNT_ID1
+            
+            logger.info(f"使用模拟交易模式，账户ID: {account_id}")
+            
+            # 创建模拟账户和模拟交易接口
+            sim_account = SimAccount(account_id, initial_cash=1000000.0)
+            trader = SimTrader(sim_account)
+        else:
+            # 使用实盘交易
+            logger.info(f"使用实盘交易模式，账户ID: {account_id}")
+            trader = MiniTrader(TRADER_PATH, account_id)
+
+                    # 打印账户信息
+            trader.print_summary()
+            local_account = LocalAccount(ACCOUNT_ID)
+        
+        # 连接交易接口
         if not trader.connect():
             logger.error("交易接口连接失败，程序退出")
             return
@@ -156,20 +184,18 @@ def main():
         if not prepare_data():
             logger.error("准备历史数据失败，程序退出")
             return
-        
-        # 打印账户信息
-        trader.print_summary()
   
         # 订阅行情
         stock_codes = list(id2stock.keys())
-        stock_codes.append('899050.BJ')
+        index_codes = [SHSE_INDEX, SZSE_INDEX, BJSE_INDEX]
+        stock_codes.extend(index_codes)
         logger.info(f"订阅行情: {stock_codes}")
         xtdata.subscribe_whole_quote(stock_codes, callback=on_tick_data)
         
         # 主循环，保持程序运行,且做部分更新等判断
         round_count = 0
         while True:
-            if round_count % 1000 == 0 or risk_manager.need_rebalance():
+            if not use_sim and round_count % 2000 == 99 or risk_manager.need_rebalance():
                 risk_manager.update_positions(trader.get_account_info(), trader.get_positions(), id2stock)
             time.sleep(0.1)
             round_count += 1
@@ -184,4 +210,12 @@ def main():
         logger.info(f"程序结束时间: {datetime.now()}")
 
 if __name__ == "__main__":
-    main()
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description='量化交易程序')
+    parser.add_argument('--sim', action='store_true', help='使用模拟交易模式')
+    parser.add_argument('--account', type=str, default="sim_id1", help='指定交易账户ID')
+    
+    args = parser.parse_args()
+    
+    # 将解析后的参数传递给main函数
+    main(use_sim=args.sim, account_id=args.account)

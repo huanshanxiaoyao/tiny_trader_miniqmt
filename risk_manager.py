@@ -3,19 +3,142 @@ from logger import logger
 
 class RiskManager:
     """
-    风险管理类
-    用于评估交易指令的风险，确保交易安全
-    目前把仓位管理等功能放在这里，后续可以考虑拆分成单独的类
+    风险管理器，负责仓位控制和风险管理
     """
     def __init__(self):
-
-        #买入频率控制
-        self.buy_interval = 60
-
-        self.last_update_time = None
-        self.update_interval = 5 #TODO
-        self.submit_trade_count = 0
-        pass
+        self.position_limits = {}      # 持仓限制 {股票代码: 最大持仓比例}
+        self.max_position_ratio = 0.90 # 最大总持仓比例
+        logger.info("初始化风险管理器")
+    
+    def set_position_limit(self, code, max_ratio):
+        """
+        设置单个股票的持仓限制
+        :param code: 股票代码
+        :param max_ratio: 最大持仓比例
+        """
+        self.position_limits[code] = max_ratio
+        logger.info(f"设置股票 {code} 的最大持仓比例为 {max_ratio:.2%}")
+    
+    def set_max_position_ratio(self, ratio):
+        """
+        设置最大总持仓比例
+        :param ratio: 最大总持仓比例
+        """
+        self.max_position_ratio = ratio
+        logger.info(f"设置最大总持仓比例为 {ratio:.2%}")
+    
+    def check_rebalance_need(self, account):
+        """
+        检查是否需要重新平衡持仓
+        :param account: 账户对象
+        :return: 是否需要重新平衡，以及原因
+        """
+        positions = account.get_positions()
+        total_asset = account.get_total_asset()
+        
+        if total_asset <= 0:
+            return False, "总资产为0，无需重新平衡"
+        
+        # 检查总持仓比例
+        total_position_ratio = sum(pos.get('position_ratio', 0) for pos in positions.values())
+        if total_position_ratio > self.max_position_ratio:
+            return True, f"总持仓比例 {total_position_ratio:.2%} 超过最大限制 {self.max_position_ratio:.2%}"
+        
+        # 检查单个持仓是否超过限制
+        for code, position in positions.items():
+            position_ratio = position.get('position_ratio', 0)
+            max_ratio = self.position_limits.get(code, 0.1)  # 默认单个股票最大持仓比例为10%
+            if position_ratio > max_ratio:
+                return True, f"股票 {code} 持仓比例 {position_ratio:.2%} 超过限制 {max_ratio:.2%}"
+        
+        return False, "持仓比例正常"
+    
+    def get_position_ratio(self, account, code):
+        """
+        获取指定股票的持仓比例
+        :param account: 账户对象
+        :param code: 股票代码
+        :return: 持仓比例，如果没有持仓则返回0
+        """
+        position = account.get_position(code)
+        if position:
+            return position.get('position_ratio', 0.0)
+        return 0.0
+    
+    def get_total_position_ratio(self, account):
+        """
+        获取总持仓比例
+        :param account: 账户对象
+        :return: 总持仓比例
+        """
+        positions = account.get_positions()
+        return sum(pos.get('position_ratio', 0.0) for pos in positions.values())
+    
+    def get_max_buy_amount(self, account, code, price):
+        """
+        计算最大可买入数量
+        :param account: 账户对象
+        :param code: 股票代码
+        :param price: 买入价格
+        :return: 最大可买入数量
+        """
+        if price <= 0:
+            return 0
+        
+        # 获取账户信息
+        cash = account.get_available_cash()
+        total_asset = account.get_total_asset()
+        
+        # 计算当前持仓比例
+        current_ratio = self.get_position_ratio(account, code)
+        total_ratio = self.get_total_position_ratio(account)
+        
+        # 获取该股票的最大持仓比例限制
+        max_ratio = self.position_limits.get(code, 0.1)
+        
+        # 计算可用于买入的资金
+        # 1. 基于现金限制
+        max_cash = cash * 0.95  # 预留5%的现金缓冲
+        
+        # 2. 基于单个股票持仓比例限制
+        max_position_value = total_asset * max_ratio
+        current_position_value = total_asset * current_ratio
+        max_buy_value_by_position = max_position_value - current_position_value
+        
+        # 3. 基于总持仓比例限制
+        max_total_value = total_asset * self.max_position_ratio
+        current_total_value = total_asset * total_ratio
+        max_buy_value_by_total = max_total_value - current_total_value
+        
+        # 取三者的最小值
+        max_buy_value = min(max_cash, max_buy_value_by_position, max_buy_value_by_total)
+        
+        # 如果为负数，则无法买入
+        if max_buy_value <= 0:
+            return 0
+        
+        # 计算最大可买入数量（考虑手续费）
+        commission_rate = 0.0005  # 假设手续费率为0.05%
+        max_amount = int(max_buy_value / (price * (1 + commission_rate)))
+        
+        # 确保为100的整数倍（A股交易规则）
+        max_amount = (max_amount // 100) * 100
+        
+        return max_amount
+    
+    def get_max_sell_amount(self, account, code):
+        """
+        计算最大可卖出数量
+        :param account: 账户对象
+        :param code: 股票代码
+        :return: 最大可卖出数量
+        """
+        position = account.get_position(code)
+        if not position:
+            return 0
+        
+        # 返回可用持仓数量
+        return position.get('can_use_volume', 0)
 
     def need_rebalance(self):
         current_time = int(datetime.now().timestamp())

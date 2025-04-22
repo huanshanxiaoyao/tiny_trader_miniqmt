@@ -4,6 +4,9 @@ TRADER_PATH = r"D:\Apps\ZJ_QMT\userdata_mini"
 
 Position_Level = 0.3
 
+BJSE_INDEX = '899050.BJ'
+SHSE_INDEX = '000001.SH'
+HS_INDEX = '000300.SH'
 # 当前选中的股票组合 #紫色
 BASKET1 = [
     "832491.BJ", "832522.BJ", "835174.BJ",
