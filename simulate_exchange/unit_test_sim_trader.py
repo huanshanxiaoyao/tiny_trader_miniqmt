@@ -17,13 +17,12 @@ def unit_test():
     # 创建测试账户
     account_id = 'test_trader_account'
     initial_cash = 1000000.0
-    account = SimAccount(account_id, initial_cash)
+    account = SimAccount(account_id, 'test_data', initial_cash)
     
     # 创建模拟交易接口
     trader = SimTrader(account)
     
     print("===== 测试模拟交易接口初始化 =====")
-    print(f"交易延迟: {trader.trade_delay}秒")
     print(f"手续费率: {trader.commission_rate}")
     print(f"待处理订单数量: {len(trader.get_pending_orders())}")
     print(f"交易历史记录数量: {len(trader.get_trade_history())}")
@@ -37,7 +36,7 @@ def unit_test():
     buy_amount1 = 1000
     buy_price1 = 15.5
     
-    order_id1 = trader.buy_stock(stock_code1, buy_amount1, buy_price1, "测试买入")
+    order_id1 = trader.buy_stock(stock_code1, buy_amount1, 0, buy_price1, "测试买入")
     print(f"订单ID: {order_id1}")
     
     # 检查待处理订单
@@ -90,7 +89,7 @@ def unit_test():
     print("\n===== 测试可以成交的情况 =====")
     # 提高买入价格，使其高于卖一价
     buy_price2 = 15.6
-    order_id2 = trader.buy_stock(stock_code1, buy_amount1, buy_price2, "测试买入（可成交）")
+    order_id2 = trader.buy_stock(stock_code1, buy_amount1, 0,  buy_price2, "测试买入（可成交）")
     
     # 行情触发
     trader.realtime_trigger(ticks)
@@ -128,7 +127,7 @@ def unit_test():
     # 卖出部分持仓
     sell_amount = 500
     sell_price = 15.65  # 低于买一价，应该可以成交
-    order_id3 = trader.sell_stock(stock_code1, sell_amount, sell_price, "测试卖出")
+    order_id3 = trader.sell_stock(stock_code1, sell_amount, 0, sell_price, "测试卖出")
     
     # 行情触发
     trader.realtime_trigger(ticks)
@@ -146,7 +145,7 @@ def unit_test():
     # 测试取消订单功能
     print("\n===== 测试取消订单功能 =====")
     # 创建一个新订单
-    order_id4 = trader.sell_stock(stock_code1, 100, 16.0, "测试取消")
+    order_id4 = trader.sell_stock(stock_code1, 100, 0, 16.0, "测试取消")
     
     # 取消订单
     cancel_result = trader.cancel_order(order_id4)
@@ -175,7 +174,7 @@ def unit_test():
     tick_data2['bidPrice'] = [12.45, 12.40, 12.35, 12.30, 12.25]
     
     # 下单
-    order_id5 = trader.buy_stock(stock_code2, 800, 12.60, "测试多股票")
+    order_id5 = trader.buy_stock(stock_code2, 800, 0, 12.60, "测试多股票")
     
     # 更新行情
     ticks = {stock_code1: tick_data, stock_code2: tick_data2}
@@ -194,12 +193,12 @@ def unit_test():
     # 测试异常情况
     print("\n===== 测试异常情况 =====")
     # 测试交易数量为0
-    order_id_invalid = trader.buy_stock(stock_code1, 0, 15.5, "测试无效数量")
+    order_id_invalid = trader.buy_stock(stock_code1, 0, 0, 15.5, "测试无效数量")
     print(f"无效数量订单ID: {order_id_invalid}")
     
     # 测试资金不足
     large_amount = 10000000
-    order_id_large = trader.buy_stock(stock_code1, large_amount, 15.5, "测试资金不足")
+    order_id_large = trader.buy_stock(stock_code1, large_amount, 0, 15.5, "测试资金不足")
     trader.realtime_trigger(ticks)
     
     # 检查订单状态

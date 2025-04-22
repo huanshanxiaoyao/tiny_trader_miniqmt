@@ -1,8 +1,14 @@
 import os
+import sys
 import json
 import pandas as pd
 from datetime import datetime
-from sim_logger import logger  # 修改为使用本地的sim_logger
+from .sim_logger import logger  # 使用相对导入
+
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 将上一级目录添加到sys.path中
+sys.path.append(parent_dir)
+
 from base_account import BaseAccount
 
 class SimAccount(BaseAccount):
@@ -18,11 +24,9 @@ class SimAccount(BaseAccount):
         :param data_dir: 数据存储目录
         :param initial_cash: 初始资金
         """
-        # 调整data_dir路径，使其位于simulate_exchange的上一级目录
-        adjusted_data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), data_dir)
         
         # 调用父类初始化方法
-        super().__init__(account_id, adjusted_data_dir, initial_cash)
+        super().__init__(account_id, data_dir, initial_cash)
         
         logger.info(f"模拟账户 {account_id} 初始化完成，总资产: {self.total_asset:.2f}")
     
@@ -163,14 +167,7 @@ class SimAccount(BaseAccount):
         except Exception as e:
             logger.error(f"更新持仓失败: {e}", exc_info=True)
             return False
-    
-    def update_prices(self, price_dict):
-        """
-        更新持仓股票的最新价格
-        :param price_dict: 股票代码 -> 最新价格的字典
-        """
-        # 直接调用父类的update_price方法
-        return self.update_price(price_dict)
+
 
 def unit_test():
     """单元测试函数已移至unit_test_sim_account.py"""

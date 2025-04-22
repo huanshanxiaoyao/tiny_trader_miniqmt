@@ -8,7 +8,7 @@ class BaseAccount:
     """
     账户基类，定义账户的基本属性和方法
     """
-    def __init__(self, account_id, data_dir="account_data", initial_cash=1000000.0):
+    def __init__(self, account_id, data_dir="sim_data", initial_cash=1000000.0):
         """
         初始化账户基类
         :param account_id: 账户ID
@@ -16,6 +16,7 @@ class BaseAccount:
         :param initial_cash: 初始资金
         """
         self.account_id = account_id
+        self.is_simulated = True  # 默认为模拟账户，实盘账户要重置
         self.data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), data_dir)
         
         # 确保数据目录存在
@@ -65,6 +66,54 @@ class BaseAccount:
         
         logger.info(f"账户 {account_id} 初始化完成，总资产: {self.total_asset:.2f}")
     
+    def update_prices(self, code2price):
+        """
+        更新持仓股票的价格
+        :param code2price: 股票代码到价格的映射
+        """
+        updated = False
+        # 先更新每个持仓的市值
+        for code, price in code2price.items():
+            if code in self.positions and price > 0:
+                position = self.positions[code]
+                old_market_value = position.get('market_value', 0.0)
+                
+                # 更新市值
+                volume = position.get('volume', 0)
+                new_market_value = volume * price
+                position['market_value'] = new_market_value
+                position['last_price'] = price
+                
+                # 更新盈亏
+                cost = position.get('cost', 0.0)
+                position['profit'] = new_market_value - cost
+                if cost > 0:
+                    position['profit_ratio'] = position['profit'] / cost
+                else:
+                    position['profit_ratio'] = 0.0
+                
+                updated = True
+                logger.debug(f"更新股票 {code} 价格: {price}, 市值: {old_market_value:.2f} -> {new_market_value:.2f}")
+        
+        if updated:
+            # 更新市值和总资产
+            self._update_market_value()
+            
+            # 更新所有持仓的持仓比例
+            for code, position in self.positions.items():
+                if self.total_asset > 0:
+                    position['position_ratio'] = position['market_value'] / self.total_asset
+                else:
+                    position['position_ratio'] = 0.0
+            
+            # 保存数据
+            self._save_account()
+            self._save_positions()
+            
+            logger.debug(f"更新账户市值: {self.market_value:.2f}, 总资产: {self.total_asset:.2f}")
+        
+        return updated
+
     def _load_account(self):
         """加载账户数据"""
         try:
@@ -226,123 +275,10 @@ class BaseAccount:
         self.updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.last_update_time = datetime.now()  # 兼容旧代码
     
-    def update_price(self, code2price):
-        """
-        更新持仓股票的价格
-        :param code2price: 股票代码到价格的映射
-        """
-        updated = False
-        # 先更新每个持仓的市值
-        for code, price in code2price.items():
-            if code in self.positions and price > 0:
-                position = self.positions[code]
-                old_market_value = position.get('market_value', 0.0)
-                
-                # 更新市值
-                volume = position.get('volume', 0)
-                new_market_value = volume * price
-                position['market_value'] = new_market_value
-                position['last_price'] = price
-                
-                # 更新盈亏
-                cost = position.get('cost', 0.0)
-                position['profit'] = new_market_value - cost
-                if cost > 0:
-                    position['profit_ratio'] = position['profit'] / cost
-                else:
-                    position['profit_ratio'] = 0.0
-                
-                updated = True
-                logger.debug(f"更新股票 {code} 价格: {price}, 市值: {old_market_value:.2f} -> {new_market_value:.2f}")
-        
-        if updated:
-            # 更新市值和总资产
-            self._update_market_value()
-            
-            # 更新所有持仓的持仓比例
-            for code, position in self.positions.items():
-                if self.total_asset > 0:
-                    position['position_ratio'] = position['market_value'] / self.total_asset
-                else:
-                    position['position_ratio'] = 0.0
-            
-            # 保存数据
-            self._save_account()
-            self._save_positions()
-            
-            logger.debug(f"更新账户市值: {self.market_value:.2f}, 总资产: {self.total_asset:.2f}")
-        
-        return updated
+
     
-    def update_positions(self, account_info, positions, callback=None):
-        """
-        更新账户持仓信息
-        :param account_info: 账户信息
-        :param positions: 持仓信息
-        :param callback: 回调函数，用于处理持仓变化时的特定逻辑
-        :return: 是否更新成功
-        """
-        try:
-            # 更新账户基本信息
-            self.cash = account_info.get('cash', 0.0)
-            self.free_cash = account_info.get('free_cash', self.cash)  # 如果没有提供free_cash，使用cash
-            self.frozen_cash = account_info.get('frozen_cash', 0.0)
-            self.total_asset = account_info.get('total_asset', 0.0)
-            self.market_value = account_info.get('market_value', 0.0)
-            self.commission = account_info.get('commission', 0.0)
-            
-            # 更新持仓信息
-            old_positions = self.positions.copy()
-            self.positions = {}
-            
-            for code, position in positions.items():
-                # 提取持仓信息
-                volume = position.get('volume', 0)
-                if volume <= 0:
-                    continue
-                
-                # 更新持仓
-                self.positions[code] = {
-                    'code': code,
-                    'stock_code': code,  # 兼容SimAccount
-                    'volume': volume,
-                    'can_use_volume': position.get('can_use_volume', volume),
-                    'frozen_volume': position.get('frozen_volume', 0),
-                    'avg_price': position.get('avg_price', 0.0),
-                    'cost': position.get('cost', 0.0),
-                    'market_value': position.get('market_value', 0.0),
-                    'profit': position.get('profit', 0.0),
-                    'profit_ratio': position.get('profit_ratio', 0.0),
-                    'position_ratio': position.get('market_value', 0.0) / self.total_asset if self.total_asset > 0 else 0.0,
-                    'updated_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                }
-            
-            # 检查持仓变化并执行回调
-            if callback:
-                for code in old_positions:
-                    if code not in self.positions:
-                        # 持仓已清空
-                        callback(code, None)
-                        logger.info(f"持仓已清空: {code}")
-                
-                # 对新持仓执行回调
-                for code, position in self.positions.items():
-                    callback(code, position)
-            
-            # 更新最后更新时间
-            self.updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            self.last_update_time = datetime.now()  # 兼容旧代码
-            
-            # 保存数据
-            self._save_account()
-            self._save_positions()
-            
-            logger.info(f"更新账户信息成功: 可用资金={self.cash:.2f}, 可使用资金={self.free_cash:.2f}, 总资产={self.total_asset:.2f}, 持仓数量={len(self.positions)}")
-            return True
-        
-        except Exception as e:
-            logger.error(f"更新账户信息失败: {e}", exc_info=True)
-            return False
+    #def update_positions(self,):
+    """本地模拟账户，和本地与服务器同步更新的账户，持仓的更新完全不同，这里不做实现，甚至不提供相同接口"""
     
     def reset(self, initial_cash=1000000.0):
         """

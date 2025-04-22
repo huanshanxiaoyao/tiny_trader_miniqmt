@@ -1,6 +1,11 @@
 from datetime import datetime
+from enum import Enum
 import pandas as pd
-from sim_logger import logger  # 使用本地的sim_logger
+from .sim_logger import logger  # 使用本地的sim_logger
+
+class PriceType(Enum):
+    LAST_PRICE = 0  # 最新价
+    OPEN_PRICE = 1  # 开盘价 #TODO
 
 class SimTrader:
     """
@@ -8,11 +13,7 @@ class SimTrader:
     用于模拟实盘交易，处理交易请求
     account SimAccount: 模拟账户对象
     """
-    class PriceType(Enum):
-        """价格类型"""
-        LAST_PRICE = 0  # 最新价
-        OPEN_PRICE = 1  # 开盘价
-        #TODO
+
 
     def __init__(self, account):
         # 模拟账户
@@ -23,6 +24,8 @@ class SimTrader:
         self.trade_history = []
         # 交易手续费率
         self.commission_rate = 0.0005
+        # 行情数据超时时间（秒）
+        self.tick_timeout = 2
         
         self.code2tick = {}
         
@@ -33,7 +36,7 @@ class SimTrader:
         logger.info("连接模拟交易接口成功")
         return True
     
-    def buy_stock(self, stock_code, amount, price_type=self.PriceType.LAST_PRICE, price=None, remark=None):
+    def buy_stock(self, stock_code, amount, price_type=PriceType.LAST_PRICE, price=None, remark=None):
         """
         买入股票
         :param stock_code: 股票代码
@@ -43,6 +46,7 @@ class SimTrader:
         :param remark: 备注
         :return: 订单ID
         """
+
         # 如果没有指定价格，则获取当前行情价格
         if price is None and stock_code in self.code2tick:
             tick_data = self.code2tick[stock_code]
@@ -57,7 +61,7 @@ class SimTrader:
         
         return self.handle_order(self.account, stock_code, 'buy', amount, price, remark)
     
-    def sell_stock(self, stock_code, amount, price_type=self.PriceType.LAST_PRICE, price=None, remark=None):
+    def sell_stock(self, stock_code, amount, price_type=PriceType.LAST_PRICE, price=None, remark=None):
         """
         卖出股票
         :param stock_code: 股票代码
@@ -81,39 +85,7 @@ class SimTrader:
         
         return self.handle_order(self.account, stock_code, 'sell', amount, price, remark)
     
-    def get_account_info(self):
-        """获取账户信息"""
-        return {
-            'account_id': self.account.account_id,
-            'cash': self.account.cash,
-            'total_asset': self.account.total_asset,
-            'market_value': self.account.market_value
-        }
-    
-    def get_positions(self):
-        """获取持仓信息"""
-        return self.account.get_positions()
-    
-    def print_summary(self):
-        """打印账户摘要信息"""
-        account_info = self.get_account_info()
-        positions = self.get_positions()
-        
-        logger.info("=" * 50)
-        logger.info(f"账户ID: {account_info['account_id']}")
-        logger.info(f"可用资金: {account_info['cash']:.2f}")
-        logger.info(f"持仓市值: {account_info['market_value']:.2f}")
-        logger.info(f"总资产: {account_info['total_asset']:.2f}")
-        logger.info(f"持仓数量: {len(positions)}")
-        
-        if positions:
-            logger.info("-" * 50)
-            logger.info("持仓明细:")
-            for code, position in positions.items():
-                logger.info(f"股票: {code}, 数量: {position['volume']}, 可用: {position['can_use_volume']}, "
-                           f"成本: {position['avg_price']:.2f}, 市值: {position['market_value']:.2f}")
-        
-        logger.info("=" * 50)
+
 
     def handle_order(self, account, stock_code, trade_type, amount, price, remark=None):
         """
@@ -176,6 +148,61 @@ class SimTrader:
         except Exception as e:
             logger.error(f"处理订单失败: {e}", exc_info=True)
             return None
+
+    def _check_order_execution(self, order):
+        """
+        检查订单是否可以成交
+        :param order: 订单信息
+        """
+        try:
+            if order['status'] != 'pending':
+                return
+            
+            stock_code = order['stock_code']
+            trade_type = order['trade_type']
+            amount = order['amount']
+            order_price = order['price']
+            order_id = order['order_id']
+            
+            # 如果没有该股票的行情数据，则无法判断是否可以成交
+            if stock_code not in self.code2tick:
+                return
+            
+            tick_data = self.code2tick[stock_code]
+            
+            # 检查行情数据是否过期（超过设定的超时时间）
+            tick_time = tick_data.get('time')
+            current_time = datetime.now().timestamp()
+            if tick_time is not None and current_time - tick_time > self.tick_timeout:
+                logger.info(f"股票 {stock_code} 的行情数据已过期，订单 {order_id} 将等待新行情触发")
+                return
+            
+            last_price = tick_data.get('lastPrice')
+            
+            # 如果没有最新价，则无法判断是否可以成交
+            if last_price is None:
+                return
+            
+            can_execute = False
+            execution_price = order_price  # 默认以委托价格成交
+            
+            if trade_type == 'buy':
+                # 买单成交条件：委托价格 >= 卖一价
+                ask_prices = tick_data.get('askPrice', [])
+                if isinstance(ask_prices, list) and len(ask_prices) > 0 and order_price >= ask_prices[0]:
+                    can_execute = True
+                    execution_price = min(order_price, ask_prices[0])  # 以较低的价格成交
+            elif trade_type == 'sell':
+                # 卖单成交条件：委托价格 <= 买一价
+                bid_prices = tick_data.get('bidPrice', [])
+                if isinstance(bid_prices, list) and len(bid_prices) > 0 and order_price <= bid_prices[0]:
+                    can_execute = True
+                    execution_price = max(order_price, bid_prices[0])  # 以较高的价格成交
+            
+            if can_execute:
+                self._execute_order(order, execution_price)
+        except Exception as e:
+            logger.error(f"检查订单成交失败: {e}", exc_info=True)
     
     def realtime_trigger(self, ticks):
         """
@@ -209,53 +236,23 @@ class SimTrader:
             logger.info(f"实时行情触发完成，处理了 {len(ticks)} 只股票的行情数据")
         except Exception as e:
             logger.error(f"处理实时行情数据失败: {e}", exc_info=True)
-    
-    def _check_order_execution(self, order):
+
+    def cancel_order(self, order_id):
         """
-        检查订单是否可以成交
-        :param order: 订单信息
+        取消订单
+        :param order_id: 订单ID
+        :return: 是否成功取消
         """
-        try:
-            if order['status'] != 'pending':
-                return
-            
-            stock_code = order['stock_code']
-            trade_type = order['trade_type']
-            amount = order['amount']
-            order_price = order['price']
-            
-            # 如果没有该股票的行情数据，则无法判断是否可以成交
-            if stock_code not in self.code2tick:
-                return
-            
-            tick_data = self.code2tick[stock_code]
-            last_price = tick_data.get('lastPrice')
-            
-            # 如果没有最新价，则无法判断是否可以成交
-            if last_price is None:
-                return
-            
-            can_execute = False
-            execution_price = order_price  # 默认以委托价格成交
-            
-            if trade_type == 'buy':
-                # 买单成交条件：委托价格 >= 卖一价
-                ask_prices = tick_data.get('askPrice', [])
-                if isinstance(ask_prices, list) and len(ask_prices) > 0 and order_price >= ask_prices[0]:
-                    can_execute = True
-                    execution_price = min(order_price, ask_prices[0])  # 以较低的价格成交
-            elif trade_type == 'sell':
-                # 卖单成交条件：委托价格 <= 买一价
-                bid_prices = tick_data.get('bidPrice', [])
-                if isinstance(bid_prices, list) and len(bid_prices) > 0 and order_price <= bid_prices[0]:
-                    can_execute = True
-                    execution_price = max(order_price, bid_prices[0])  # 以较高的价格成交
-            
-            if can_execute:
-                self._execute_order(order, execution_price)
-        except Exception as e:
-            logger.error(f"检查订单成交失败: {e}", exc_info=True)
-    
+        for order in self.pending_orders:
+            if order['order_id'] == order_id:
+                order['status'] = 'cancelled'
+                self.pending_orders.remove(order)
+                logger.info(f"取消订单: {order_id}")
+                return True
+        
+        logger.warning(f"未找到订单: {order_id}")
+        return False 
+
     def _execute_order(self, order, execution_price):
         """
         执行订单成交
@@ -329,19 +326,37 @@ class SimTrader:
             df = df.drop(columns=['account'])
         
         return df
+
+    def get_account_info(self):
+        """获取账户信息"""
+        return {
+            'account_id': self.account.account_id,
+            'cash': self.account.cash,
+            'total_asset': self.account.total_asset,
+            'market_value': self.account.market_value
+        }
     
-    def cancel_order(self, order_id):
-        """
-        取消订单
-        :param order_id: 订单ID
-        :return: 是否成功取消
-        """
-        for order in self.pending_orders:
-            if order['order_id'] == order_id:
-                order['status'] = 'cancelled'
-                self.pending_orders.remove(order)
-                logger.info(f"取消订单: {order_id}")
-                return True
+    def get_positions(self):
+        """获取持仓信息"""
+        return self.account.get_positions()
+    
+    def print_summary(self):
+        """打印账户摘要信息"""
+        account_info = self.get_account_info()
+        positions = self.get_positions()
         
-        logger.warning(f"未找到订单: {order_id}")
-        return False
+        logger.info("=" * 50)
+        logger.info(f"账户ID: {account_info['account_id']}")
+        logger.info(f"可用资金: {account_info['cash']:.2f}")
+        logger.info(f"持仓市值: {account_info['market_value']:.2f}")
+        logger.info(f"总资产: {account_info['total_asset']:.2f}")
+        logger.info(f"持仓数量: {len(positions)}")
+        
+        if positions:
+            logger.info("-" * 50)
+            logger.info("持仓明细:")
+            for code, position in positions.items():
+                logger.info(f"股票: {code}, 数量: {position['volume']}, 可用: {position['can_use_volume']}, "
+                           f"成本: {position['avg_price']:.2f}, 市值: {position['market_value']:.2f}")
+        
+        logger.info("=" * 50)

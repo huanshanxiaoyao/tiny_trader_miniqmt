@@ -12,7 +12,7 @@ def unit_test():
     # 创建测试账户
     account_id = 'test_account2'
     initial_cash = 100000.0
-    account = SimAccount(account_id, initial_cash)
+    account = SimAccount(account_id, 'test_data', initial_cash)
     
     # 测试初始账户信息
     print("===== 初始账户信息 =====")

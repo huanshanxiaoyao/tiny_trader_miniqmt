@@ -9,7 +9,7 @@ from local_account import LocalAccount
 from strategy.strategy_factory import StrategyFactory
 from config import ACCOUNT_ID, TRADER_PATH, STRATEGY_CONFIG, DATA_CONFIG
 from config import BASKET1, BASKET2, BASKET3, CODE2RELATED,SH50,BJ50
-from config import BJSE_INDEX, SHSE_INDEX, SZSE_INDEX
+from config import BJSE_INDEX, SHSE_INDEX, HS_INDEX
 from my_stock import MyStock
 from logger import logger, tick_logger  # 修改导入语句
 import os
@@ -148,8 +148,12 @@ def main(use_sim=False, account_id=ACCOUNT_ID):
             logger.info(f"使用模拟交易模式，账户ID: {account_id}")
             
             # 创建模拟账户和模拟交易接口
-            sim_account = SimAccount(account_id, initial_cash=1000000.0)
+            sim_account = SimAccount(account_id)
             trader = SimTrader(sim_account)
+
+            mini_trader = MiniTrader(TRADER_PATH, account_id)
+            mini_trader.connect()
+
         else:
             # 使用实盘交易
             logger.info(f"使用实盘交易模式，账户ID: {account_id}")
@@ -187,7 +191,7 @@ def main(use_sim=False, account_id=ACCOUNT_ID):
   
         # 订阅行情
         stock_codes = list(id2stock.keys())
-        index_codes = [SHSE_INDEX, SZSE_INDEX, BJSE_INDEX]
+        index_codes = [SHSE_INDEX, HS_INDEX, BJSE_INDEX]
         stock_codes.extend(index_codes)
         logger.info(f"订阅行情: {stock_codes}")
         xtdata.subscribe_whole_quote(stock_codes, callback=on_tick_data)
@@ -195,8 +199,8 @@ def main(use_sim=False, account_id=ACCOUNT_ID):
         # 主循环，保持程序运行,且做部分更新等判断
         round_count = 0
         while True:
-            if not use_sim and round_count % 2000 == 99 or risk_manager.need_rebalance():
-                risk_manager.update_positions(trader.get_account_info(), trader.get_positions(), id2stock)
+            if not use_sim and (round_count % 2000 == 99 or risk_manager.need_rebalance()):
+                local_account.update_positions(trader.get_account_info(), trader.get_positions(), id2stock)
             time.sleep(0.1)
             round_count += 1
             
