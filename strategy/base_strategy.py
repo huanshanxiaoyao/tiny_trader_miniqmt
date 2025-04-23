@@ -25,22 +25,20 @@ class BaseStrategy(ABC):
         """
         策略触发接口
         :param ticks: 相关股票行情数据字典
-        :return: (交易类型, 交易数量) 或 None
+        :return: market_rise
         """
         pass
 
     def _check_market(self, market_tick):
         """检查大盘状况, 可复用也可以覆盖"""
-        if not market_tick:
-            return None,None
-            
-        # 计算大盘涨跌幅
-        if market_tick.get('open', 0) <= 0:
-            return None,None
+        if not market_tick or market_tick.get('open', 0) <= 0:
+            return None
             
         market_rise = (market_tick['lastPrice'] / market_tick['open'] - 1) * 100
         
-        # 判断大盘状况
-        market_good = market_rise > -2  # 大盘跌幅小于2%认为是好的
-        print(f"update index:{market_good},{market_rise}")
-        return market_good, market_rise
+        return market_rise
+    def need_update(self):
+        ###LocalAccount需要主动去查询是否更新，
+        ###SimAccount 在模拟交易的时候直接调用了更新
+        ###为了对其接口
+        return False

@@ -14,6 +14,15 @@ class LocalAccount(BaseAccount):
         super().__init__(account_id, data_dir)
         self.is_simulated = False
         logger.info(f"初始化本地账户: {account_id}")
+        self.submit_trade_count = 0
+
+        self.last_update_time = 0
+        self.update_interval = 30      # 重新平衡的时间间隔，单位为秒
+
+    def need_update(self):
+        current_time = int(datetime.now().timestamp())
+        return  (current_time - self.last_update_time) > self.update_interval
+
     
     def update_positions(self, acc_info, positions_df, id2stock):
         """

@@ -2,7 +2,7 @@
 ACCOUNT_ID = "6681802088"
 TRADER_PATH = r"D:\Apps\ZJ_QMT\userdata_mini"
 
-Position_Level = 0.3
+
 
 BJSE_INDEX = '899050.BJ'
 SHSE_INDEX = '000001.SH'
@@ -59,11 +59,11 @@ BJ50 = [
 
 # 策略配置
 STRATEGY_CONFIG = {
-    "enabled_strategies": [1003,1002],  # 启用的策略ID列表
+    "enabled_strategies": [1001],  # 启用的策略ID列表
     "backtest_strategies": [1002],  # 回测的策略ID列表
     "strategy_params": {
         1001: {
-            "target_codes": BASKET1  # 策略目标股票代码
+            "target_codes": BJ50  # 策略目标股票代码
         },
         1002: {
             "target_codes": BJ50  # 策略目标股票代码

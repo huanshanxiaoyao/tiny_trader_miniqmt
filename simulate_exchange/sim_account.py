@@ -30,7 +30,7 @@ class SimAccount(BaseAccount):
         
         logger.info(f"模拟账户 {account_id} 初始化完成，总资产: {self.total_asset:.2f}")
     
-    def update_position(self, stock_code, trade_type, amount, price, commission_rate):
+    def update_position(self, stock_code, trade_type, amount, price, commission_rate, remark):
         """
         更新持仓
         :param stock_code: 股票代码
@@ -146,6 +146,7 @@ class SimAccount(BaseAccount):
                 'price': price,
                 'trade_value': trade_value,
                 'commission': commission,
+                'remark': remark,
                 'trade_time': trade_time
             }
             

@@ -269,9 +269,11 @@ class SimTrader:
             # 重新计算交易金额和手续费（基于实际成交价格）
             trade_value = amount * execution_price
             commission = trade_value * self.commission_rate
+
+            remark = order.get('remark', '')
             
             # 更新账户持仓
-            success = account.update_position(stock_code, trade_type, amount, execution_price, self.commission_rate)
+            success = account.update_position(stock_code, trade_type, amount, execution_price, self.commission_rate, remark)
             
             if success:
                 # 更新订单状态

@@ -95,10 +95,12 @@ def on_tick_data(ticks):
     行情数据回调函数
     :param ticks: 股票行情数据字典
     """
-    global strategies, risk_manager, trader
+    global strategies, risk_manager, trader, using_account, id2stock
     logger.info(f"接收行情数据: 数量={len(ticks)}, 股票代码列表={list(ticks.keys())}")
     #index_ticks = xtdata.get_full_tick(['899050.BJ'])
     #logger.info(f"指数行情数据: {index_ticks}")
+    if using_account.is_simulated:
+        trader.realtime_trigger(ticks)
     for code, tick in ticks.items():
         tick_logger.info(f"{code} : {tick}")  # 使用专门的tick_logger
     # 遍历所有策略
@@ -113,7 +115,7 @@ def on_tick_data(ticks):
         return
     
     # 风险评估
-    reviewed_signals = risk_manager.evaluate_signals(all_signals)
+    reviewed_signals = risk_manager.evaluate_signals(all_signals, using_account)
     if not reviewed_signals:
         return
     
@@ -125,6 +127,8 @@ def on_tick_data(ticks):
             ret = trader.sell_stock(stock.code, amount, remark=f'{remark}')
         
         logger.info(f"执行交易: {trade_type} {stock.code} {amount}, ret: {ret}")
+    if len(reviewed_signals) > 0 or using_account.need_update():
+        using_account.update_positions(trader.get_account_info(), trader.get_positions(), id2stock)
 
 # 在main函数中，修改模拟交易部分的代码
 def main(use_sim=False, account_id=ACCOUNT_ID):
@@ -133,9 +137,30 @@ def main(use_sim=False, account_id=ACCOUNT_ID):
     :param use_sim: 是否使用模拟交易
     :param account_id: 交易账户ID
     """
-    global data_provider, risk_manager, trader
+    global data_provider, risk_manager, trader, using_account, id2stock
     
     logger.info(f"交易程序启动时间: {datetime.now()}")
+            
+    # 初始化数据提供者
+    data_provider = DataProvider()
+    
+    # 初始化风险管理器
+    risk_manager = RiskManager()
+    
+    # 初始化股票对象
+    if not init_stocks():
+        logger.error("初始化股票对象失败，程序退出")
+        return
+
+    # 初始化策略
+    if not init_strategies():
+        logger.error("初始化策略失败，程序退出")
+        return
+
+    # 准备历史数据
+    if not prepare_data():
+        logger.error("准备历史数据失败，程序退出")
+        return
     
     try:
         # 根据参数选择使用实盘交易还是模拟交易
@@ -151,43 +176,24 @@ def main(use_sim=False, account_id=ACCOUNT_ID):
             sim_account = SimAccount(account_id)
             trader = SimTrader(sim_account)
 
-            mini_trader = MiniTrader(TRADER_PATH, account_id)
-            mini_trader.connect()
+            #mini_trader = MiniTrader(TRADER_PATH, account_id)
+            #mini_trader.connect()
+            using_account = sim_account
 
         else:
             # 使用实盘交易
             logger.info(f"使用实盘交易模式，账户ID: {account_id}")
             trader = MiniTrader(TRADER_PATH, account_id)
+                    # 连接交易接口
+            if not trader.connect():
+                logger.error("交易接口连接失败，程序退出")
+                return
 
-                    # 打印账户信息
+            # 打印账户信息
             trader.print_summary()
             local_account = LocalAccount(ACCOUNT_ID)
-        
-        # 连接交易接口
-        if not trader.connect():
-            logger.error("交易接口连接失败，程序退出")
-            return
-        
-        # 初始化数据提供者
-        data_provider = DataProvider()
-        
-        # 初始化风险管理器
-        risk_manager = RiskManager()
-        
-        # 初始化股票对象
-        if not init_stocks():
-            logger.error("初始化股票对象失败，程序退出")
-            return
-
-        # 初始化策略
-        if not init_strategies():
-            logger.error("初始化策略失败，程序退出")
-            return
-
-        # 准备历史数据
-        if not prepare_data():
-            logger.error("准备历史数据失败，程序退出")
-            return
+            using_account = local_account
+            using_account.update_positions(trader.get_account_info(), trader.get_positions(), id2stock)
   
         # 订阅行情
         stock_codes = list(id2stock.keys())
@@ -199,8 +205,6 @@ def main(use_sim=False, account_id=ACCOUNT_ID):
         # 主循环，保持程序运行,且做部分更新等判断
         round_count = 0
         while True:
-            if not use_sim and (round_count % 2000 == 99 or risk_manager.need_rebalance()):
-                local_account.update_positions(trader.get_account_info(), trader.get_positions(), id2stock)
             time.sleep(0.1)
             round_count += 1
             
@@ -222,4 +226,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     # 将解析后的参数传递给main函数
-    main(use_sim=args.sim, account_id=args.account)
+    if args.sim:
+        main(use_sim=args.sim, account_id=args.account)
+    else:
+        ###实盘交易
+        main()
