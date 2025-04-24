@@ -62,7 +62,7 @@ class LocalAccount(BaseAccount):
             
             # 计算当前仓位比例（市值占总资产的比例）
             if self.total_asset > 0:
-                self.position_ratio = self.market_value / self.total_asset
+                self.position_ratio = (1 - self.fresh_cash) / self.total_asset
             else:
                 self.position_ratio = 0
                 

@@ -19,6 +19,7 @@ class BaseAccount:
         self.is_simulated = True  # 默认为模拟账户，实盘账户要重置
         self.data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), data_dir)
         self.initial_cash = initial_cash
+        self.position_ratio = 0
 
         self.account_file = os.path.join(self.data_dir, f"{account_id}.json")
         self.positions_file = os.path.join(self.data_dir, f"{account_id}_positions.json")
@@ -210,6 +211,12 @@ class BaseAccount:
         except Exception as e:
             logger.error(f"保存交易记录失败: {e}", exc_info=True)
     
+    def get_position_ratio(self):
+        if self.total_asset == 0:
+            self.position_ratio = 0
+        self.position_ratio = 1 - self.free_cash / self.total_asset
+        return self.position_ratio
+
     def get_position(self, code):
         """
         获取指定股票的持仓信息
@@ -272,9 +279,10 @@ class BaseAccount:
     def _update_market_value(self):
         """更新市值和总资产"""
         self.market_value = sum(position.get('market_value', 0) for position in self.positions.values())
-        self.total_asset = self.cash + self.market_value + self.frozen_cash
+        self.total_asset = self.free_cash + self.market_value + self.frozen_cash
         self.updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.last_update_time = datetime.now()  # 兼容旧代码
+        logger.info(f"更新账户市值: {self.market_value:.2f}, 总资产: {self.total_asset:.2f}, free_cash: {self.free_cash:.2f}, frozen_cash: {self.frozen_cash:.2f}, position_ratio: {self.position_ratio:.2f}")
     
     #def update_positions(self,):
     """本地模拟账户，和本地与服务器同步更新的账户，持仓的更新完全不同，这里不做实现，不提供相同接口"""

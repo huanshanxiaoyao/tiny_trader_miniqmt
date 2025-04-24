@@ -22,26 +22,38 @@ class RiskManager:
 
     def check_account_limits(self, account):
         """
-        检查账户总仓位是否超过限制
+        检查账户总仓位是否超过限制，并计算可用资金
         :param account: 账户对象
-        :return: bool, 是否只允许卖出操作
+        :return: float, 可用资金数量。如果超过仓位限制，返回0表示不允许买入
         """
-        total_position_value = account.get_market_value()
-        total_asset_value = account.get_total_asset()
-
-        if total_asset_value == 0:
-            logger.warning("账户总资产为0，不允许交易")
-            return True
+        total_asset = account.get_total_asset()
+        market_value = account.get_market_value()
+        free_cash = account.get_free_cash()
+        frozen_cash = account.get_frozen_cash()
+        frozen_cash2 = total_asset - market_value - free_cash
+        if frozen_cash != frozen_cash2:
+            logger.warning(f"账户 {account.account_id} 总资产: {total_asset:.2f}, 市值: {market_value:.2f}, 可用资金: {free_cash:.2f}, 冻结资金: {frozen_cash:.2f}, 冻结资金2: {frozen_cash2:.2f}")
         
-        # 计算仓位比例
-        position_ratio = total_position_value / total_asset_value
+        # 计算当前仓位比例
+        position_ratio = account.get_position_ratio()
         
         # 判断是否超过最大仓位比例
         if position_ratio > self.max_position_ratio:
-            logger.warning(f"当前总仓位比例 {position_ratio:.2%} 超过最大限制 {self.max_position_ratio:.2%}，只允许卖出操作")
-            return True
-            
-        return False
+            logger.warning(f"当前总仓位比例 {position_ratio:.2%} 超过最大限制 {self.max_position_ratio:.2%}，不允许买入")
+            return 0
+        
+        # 计算在不超过最大仓位比例的情况下，可以额外投入的资金
+        max_allowed_market_value = total_asset * self.max_position_ratio
+        additional_allowed_value = max_allowed_market_value - market_value - frozen_cash
+        
+        # 取可用资金和允许额外投入资金的较小值
+        available_cash = min(free_cash, additional_allowed_value)
+        
+        logger.info(f"当前总资产: {total_asset:.2f}, 市值: {market_value:.2f}, 仓位比例: {position_ratio:.2%}")
+        logger.info(f"最大允许市值: {max_allowed_market_value:.2f}, 额外允许投入: {additional_allowed_value:.2f}")
+        logger.info(f"可用资金: {free_cash:.2f}, 实际可用于买入的资金: {available_cash:.2f}")
+        
+        return available_cash
 
     def check_today_deal(self, account, stock, remark, trade_type):
         """
@@ -91,21 +103,36 @@ class RiskManager:
         """
         reviewed_signals = []
         
-        # 检查账户限制
-        only_sell_mode = self.check_account_limits(account)
+        # 检查账户限制，获取可用资金
+        available_cash = self.check_account_limits(account)
+        only_sell_mode = (available_cash <= 0)
         
         current_time = int(datetime.now().timestamp())
         
+        #这里有个问题，如果有多条买入信号，需要都预先扣除free_cash吗？
+        #如果扣除，什么时候真正结算？会有一些最终不会成交的
         for stock, trade_type, amount, remark in signals:
             # 如果通过风险评估，则添加到reviewed_signals并更新交易时间
             # 更新股票的最后交易时间
             if trade_type == 'buy' and not only_sell_mode:
+                # 计算此次交易需要的资金
+                required_cash = amount * stock.current_price
+                
+                # 检查资金是否足够
+                if required_cash > available_cash:
+                    logger.warning(f"股票 {stock.code} 买入需要资金 {required_cash:.2f}，超过可用资金 {available_cash:.2f}，不允许买入")
+                    continue
+                
                 if current_time - stock.last_buy_time < self.buy_interval:
                     logger.warning(f"股票 {stock.code} 最近一次买入时间 {datetime.fromtimestamp(stock.last_buy_time)} 与当前时间 {datetime.fromtimestamp(current_time)} 间隔不足60秒，不允许再次买入")
                     continue
                 if self.check_today_deal(account, stock, remark, trade_type):
                     logger.warning(f"股票 {stock.code} 今日已成交 ，不允许再次买入")
                     continue
+                
+                # 更新可用资金
+                available_cash -= required_cash
+                
                 stock.last_buy_time = current_time
                 reviewed_signals.append((stock, trade_type, amount, remark))
                 logger.info(f"更新股票 {stock.code} 最后买入时间: {datetime.fromtimestamp(current_time)}")
