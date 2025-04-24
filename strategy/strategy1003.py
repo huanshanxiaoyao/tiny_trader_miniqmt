@@ -121,7 +121,7 @@ class Strategy1003(BaseStrategy):
             max_value, q3, median, q1, min_value = stats
             
             # 卖出信号：J值超买 + 价格高于75分位数
-            if j > self.j_high and current_price > q3:
+            if j > self.j_high and current_price > q3 and stock.current_position > 0:
                 logger.info(f"触发卖出信号: 股票 {stock.code} J值={j:.2f} > {self.j_high}, 价格={current_price:.2f} > 75分位数={q3:.2f}")
                 sell_amount = self.single_trade_value // current_price
                 if sell_amount > 0:

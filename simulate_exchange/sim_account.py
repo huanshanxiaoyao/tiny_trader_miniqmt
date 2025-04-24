@@ -27,6 +27,8 @@ class SimAccount(BaseAccount):
         
         # 调用父类初始化方法
         super().__init__(account_id, data_dir, initial_cash)
+
+        super().init_log_files()
         
         logger.info(f"模拟账户 {account_id} 初始化完成，总资产: {self.total_asset:.2f}")
     

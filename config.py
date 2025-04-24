@@ -59,7 +59,7 @@ BJ50 = [
 
 # 策略配置
 STRATEGY_CONFIG = {
-    "enabled_strategies": [1001],  # 启用的策略ID列表
+    "enabled_strategies": [1001,1002,1003],  # 启用的策略ID列表
     "backtest_strategies": [1002],  # 回测的策略ID列表
     "strategy_params": {
         1001: {

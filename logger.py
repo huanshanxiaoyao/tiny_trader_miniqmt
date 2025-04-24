@@ -1,5 +1,5 @@
 import logging
-from logging.handlers import RotatingFileHandler
+from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 import os
 
 # 创建日志目录
@@ -16,24 +16,28 @@ console_handler = logging.StreamHandler()
 console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logger.addHandler(console_handler)
 
-# 主日志文件处理器（保留原有的配置）
-main_handler = RotatingFileHandler(
+# 主日志文件处理器（按天轮转）
+main_handler = TimedRotatingFileHandler(
     os.path.join(log_dir, 'main.log'),
-    maxBytes=16*1024*1024,  # 16MB
-    backupCount=2,
+    when='midnight',  # 每天午夜轮转
+    interval=1,       # 间隔为1天
+    backupCount=30,   # 保留30天的日志
     encoding='utf-8'
 )
 main_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+main_handler.suffix = "%Y%m%d"  # 设置日志文件后缀格式为YYYYMMDD
 logger.addHandler(main_handler)
 
-# 创建TICK数据专用的处理器
-tick_handler = RotatingFileHandler(
+# 创建TICK数据专用的处理器（按天轮转）
+tick_handler = TimedRotatingFileHandler(
     os.path.join(log_dir, 'tick.log'),
-    maxBytes=50*1024*1024,  # 50MB
-    backupCount=2,
+    when='midnight',  # 每天午夜轮转
+    interval=1,       # 间隔为1天
+    backupCount=30,   # 保留30天的日志
     encoding='utf-8'
 )
 tick_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+tick_handler.suffix = "%Y%m%d"  # 设置日志文件后缀格式为YYYYMMDD
 
 # 创建TICK专用的日志记录器
 tick_logger = logging.getLogger('tick')

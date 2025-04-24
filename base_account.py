@@ -18,28 +18,29 @@ class BaseAccount:
         self.account_id = account_id
         self.is_simulated = True  # 默认为模拟账户，实盘账户要重置
         self.data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), data_dir)
-        
-        # 确保数据目录存在
-        if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)
-        
-        # 账户数据文件路径
+        self.initial_cash = initial_cash
+
         self.account_file = os.path.join(self.data_dir, f"{account_id}.json")
         self.positions_file = os.path.join(self.data_dir, f"{account_id}_positions.json")
         self.trades_file = os.path.join(self.data_dir, f"{account_id}_trades.json")
         
+    def init_log_files(self):
+        # 确保数据目录存在
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
+
         # 尝试加载已有数据，如果不存在则初始化
         ret = False
         if os.path.exists(self.account_file):
             ret = self._load_account()
         if not ret:
-            logger.warning(f"账户数据文件不存在或数据不完整，将使用初始资金 {initial_cash} 初始化账户")
+            logger.warning(f"账户数据文件不存在或数据不完整，将使用初始资金 {self.initial_cash} 初始化账户")
             # 账户基本信息
-            self.cash = initial_cash       # 可用资金
-            self.free_cash = initial_cash  # 可使用的资金（考虑冻结资金后）
+            self.cash = self.initial_cash       # 可用资金
+            self.free_cash = self.initial_cash  # 可使用的资金（考虑冻结资金后）
             self.frozen_cash = 0.0         # 冻结资金
             self.market_value = 0.0        # 持仓市值
-            self.total_asset = initial_cash # 总资产
+            self.total_asset = self.cash # 总资产
             self.commission = 0.0          # 累计手续费
             self.created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.updated_at = self.created_at
@@ -64,7 +65,7 @@ class BaseAccount:
             self.trades = []
             self._save_trades()
         
-        logger.info(f"账户 {account_id} 初始化完成，总资产: {self.total_asset:.2f}")
+        logger.info(f"账户 {self.account_id} 初始化完成，总资产: {self.total_asset:.2f}")
     
     def update_prices(self, code2price):
         """
@@ -275,10 +276,8 @@ class BaseAccount:
         self.updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.last_update_time = datetime.now()  # 兼容旧代码
     
-
-    
     #def update_positions(self,):
-    """本地模拟账户，和本地与服务器同步更新的账户，持仓的更新完全不同，这里不做实现，甚至不提供相同接口"""
+    """本地模拟账户，和本地与服务器同步更新的账户，持仓的更新完全不同，这里不做实现，不提供相同接口"""
     
     def reset(self, initial_cash=1000000.0):
         """

@@ -20,7 +20,69 @@ class RiskManager:
     
         logger.info("初始化风险管理器")
 
+    def check_account_limits(self, account):
+        """
+        检查账户总仓位是否超过限制
+        :param account: 账户对象
+        :return: bool, 是否只允许卖出操作
+        """
+        total_position_value = account.get_market_value()
+        total_asset_value = account.get_total_asset()
 
+        if total_asset_value == 0:
+            logger.warning("账户总资产为0，不允许交易")
+            return True
+        
+        # 计算仓位比例
+        position_ratio = total_position_value / total_asset_value
+        
+        # 判断是否超过最大仓位比例
+        if position_ratio > self.max_position_ratio:
+            logger.warning(f"当前总仓位比例 {position_ratio:.2%} 超过最大限制 {self.max_position_ratio:.2%}，只允许卖出操作")
+            return True
+            
+        return False
+
+    def check_today_deal(self, account, stock, remark, trade_type):
+        """
+        检查股票在当天是否已经进行过交易
+        :param account: 账户对象
+        :param stock: 股票对象
+        :param remark: 交易备注
+        :param trade_type: 交易类型
+        :return: bool, 如果当天已经有相同备注的交易则返回True，否则返回False
+        """
+        # 获取当前日期
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        # 获取账户的交易记录
+        trades = account.get_trades()
+        
+        # 检查是否有当天的相同股票、相同备注的交易记录
+        for trade in trades:
+            # 检查是否是今天的交易
+            trade_time = trade['trade_time']
+            
+            # 处理字符串格式的交易时间 "YYYY-MM-DD HH:MM:SS"
+            if isinstance(trade_time, str):
+                # 只取日期部分进行比较
+                trade_date = trade_time.split(' ')[0] if ' ' in trade_time else trade_time
+            else:
+                # 如果是时间戳格式，转换为日期字符串
+                try:
+                    trade_date = datetime.fromtimestamp(trade_time).strftime('%Y-%m-%d')
+                except (TypeError, ValueError):
+                    logger.warning(f"无法将交易时间转换为日期: {trade_time}")
+                    continue
+            
+            if (trade_date == today and 
+                trade['stock_code'] == stock.code and 
+                trade['trade_type'] == trade_type and 
+                trade.get('remark') == remark):
+                return True
+                
+        return False
+    
     def evaluate_signals(self, signals, account):
         """
         评估交易信号的风险
@@ -28,25 +90,9 @@ class RiskManager:
         :return: list of (股票stock, 交易类型, 交易数量), 经过风险评估后的交易信号
         """
         reviewed_signals = []
-        # 实现风险评估逻辑
-        # 检查账户总仓位是否超过限制
-        total_position_value = account.get_market_value()
-        total_asset_value = account.get_total_asset()
-
-        if total_asset_value == 0:
-            logger.warning("账户总资产为0，不允许交易")
-            return reviewed_signals
         
-        # 计算仓位比例
-        position_ratio = total_position_value / total_asset_value if total_asset_value > 0 else 0
-        only_sell_mode = False
-        
-        # 判断是否超过最大仓位比例
-        if position_ratio > self.max_position_ratio:
-            logger.warning(f"当前总仓位比例 {position_ratio:.2%} 超过最大限制 {self.max_position_ratio:.2%}，只允许卖出操作")
-            only_sell_mode = True
-        
-        # 通过风险评估后，更新股票的交易时间
+        # 检查账户限制
+        only_sell_mode = self.check_account_limits(account)
         
         current_time = int(datetime.now().timestamp())
         
@@ -56,6 +102,9 @@ class RiskManager:
             if trade_type == 'buy' and not only_sell_mode:
                 if current_time - stock.last_buy_time < self.buy_interval:
                     logger.warning(f"股票 {stock.code} 最近一次买入时间 {datetime.fromtimestamp(stock.last_buy_time)} 与当前时间 {datetime.fromtimestamp(current_time)} 间隔不足60秒，不允许再次买入")
+                    continue
+                if self.check_today_deal(account, stock, remark, trade_type):
+                    logger.warning(f"股票 {stock.code} 今日已成交 ，不允许再次买入")
                     continue
                 stock.last_buy_time = current_time
                 reviewed_signals.append((stock, trade_type, amount, remark))
