@@ -29,8 +29,8 @@ class RiskManager:
         total_asset = account.get_total_asset()
         market_value = account.get_market_value()
         free_cash = account.get_free_cash()
-        frozen_cash = account.get_frozen_cash()
-        frozen_cash2 = total_asset - market_value - free_cash
+        frozen_cash = total_asset - market_value - free_cash
+        frozen_cash2 = account.get_frozen_cash()
         if frozen_cash != frozen_cash2:
             logger.warning(f"账户 {account.account_id} 总资产: {total_asset:.2f}, 市值: {market_value:.2f}, 可用资金: {free_cash:.2f}, 冻结资金: {frozen_cash:.2f}, 冻结资金2: {frozen_cash2:.2f}")
         
@@ -49,9 +49,7 @@ class RiskManager:
         # 取可用资金和允许额外投入资金的较小值
         available_cash = min(free_cash, additional_allowed_value)
         
-        logger.info(f"当前总资产: {total_asset:.2f}, 市值: {market_value:.2f}, 仓位比例: {position_ratio:.2%}")
-        logger.info(f"最大允许市值: {max_allowed_market_value:.2f}, 额外允许投入: {additional_allowed_value:.2f}")
-        logger.info(f"可用资金: {free_cash:.2f}, 实际可用于买入的资金: {available_cash:.2f}")
+        logger.info(f"当前总资产: {total_asset:.2f}, 市值: {market_value:.2f}, 仓位比例: {position_ratio:.2%},最大允许市值: {max_allowed_market_value:.2f}, 额外允许投入: {additional_allowed_value:.2f}")
         
         return available_cash
 
@@ -109,13 +107,14 @@ class RiskManager:
         
         current_time = int(datetime.now().timestamp())
         
-        #这里有个问题，如果有多条买入信号，需要都预先扣除free_cash吗？
-        #如果扣除，什么时候真正结算？会有一些最终不会成交的
         for stock, trade_type, amount, remark in signals:
             # 如果通过风险评估，则添加到reviewed_signals并更新交易时间
             # 更新股票的最后交易时间
             if trade_type == 'buy' and not only_sell_mode:
                 # 计算此次交易需要的资金
+                if stock.current_price <= 0:
+                    logger.warning(f"股票 {stock.code} 价格为 {stock.current_price:.2f}，不允许买入")
+                    continue
                 required_cash = amount * stock.current_price
                 
                 # 检查资金是否足够
@@ -135,12 +134,12 @@ class RiskManager:
                 
                 stock.last_buy_time = current_time
                 reviewed_signals.append((stock, trade_type, amount, remark))
-                logger.info(f"更新股票 {stock.code} 最后买入时间: {datetime.fromtimestamp(current_time)}")
+                #logger.info(f"更新股票 {stock.code} 最后买入时间: {datetime.fromtimestamp(current_time)}")
             elif trade_type == 'sell':
                 if stock.current_position <= 0:
                     logger.warning(f"股票 {stock.code} 没有持仓，不允许卖出")
                     continue
                 stock.last_sell_time = current_time
                 reviewed_signals.append((stock, trade_type, amount, remark))
-                logger.info(f"更新股票 {stock.code} 最后卖出时间: {datetime.fromtimestamp(current_time)}")
+                #logger.info(f"更新股票 {stock.code} 最后卖出时间: {datetime.fromtimestamp(current_time)}")
         return reviewed_signals

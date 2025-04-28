@@ -60,6 +60,7 @@ class Strategy1001(BaseStrategy):
                 continue
                 
             current_price = tick['lastPrice']
+            stock.current_price = current_price
             
             # 获取历史价格数据
             prices = self.code2daily.get(stock.code, [])

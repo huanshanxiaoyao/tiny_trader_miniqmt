@@ -127,6 +127,7 @@ class SimTrader:
                 'create_time': datetime.now(),
                 'account': account
             }
+            logger.info(f"创建订单: {order_id}, 股票: {stock_code}, 类型: {trade_type}, 数量: {amount}, 价格: {price}")
             
             # 添加到待处理订单列表
             self.pending_orders.append(order)
@@ -141,7 +142,6 @@ class SimTrader:
             except Exception as e:
                 logger.error(f"触发订单处理失败: {e}", exc_info=True)
             
-            logger.info(f"创建订单: {order_id}, 股票: {stock_code}, 类型: {trade_type}, 数量: {amount}, 价格: {price}")
             
             return order_id
             
@@ -286,7 +286,7 @@ class SimTrader:
                 # 添加到交易历史
                 self.trade_history.append(order)
                 
-                logger.info(f"订单成交: {order['order_id']}, 股票: {stock_code}, 类型: {trade_type}, "
+                logger.info(f"订单成交: {order['order_id']},"
                            f"数量: {amount}, 价格: {execution_price:.2f}, 交易额: {trade_value:.2f}")
             else:
                 # 更新订单状态为失败

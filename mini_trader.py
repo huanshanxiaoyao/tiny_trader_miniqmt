@@ -152,12 +152,9 @@ class MiniTrader:
         # 获取账户可用资金
         asset = self.trader.query_stock_asset(self.account)
         available_cash = asset.cash
-        logger.info(f"买入 {stock_code}: 金额{amount}, 价格类型{price_type}, 价格{price},  备注{remark}, 可用资金{available_cash}")
-
-        
-        # 获取当前价格
+    
+        # 获取当前价格 #TODO
         if price_type == xtconstant.LATEST_PRICE:
-            logger.info(f"获取 {stock_code} 最新价格 {type(stock_code)}")
             full_tick = xtdata.get_full_tick([stock_code])
             current_price = full_tick[stock_code]['lastPrice']
         else:
@@ -170,8 +167,8 @@ class MiniTrader:
         if buy_volume <= 0:
             logger.warning(f"可买数量为0，可用资金：{available_cash}，目标金额：{amount}")
             return None
-            
-        logger.info(f"买入 {stock_code}: 数量{buy_volume}股, 价格{current_price}")
+
+        logger.info(f"买入 {stock_code}: 金额{amount}, 价格类型{price_type}, 价格{price},  备注{remark}, 可用资金{available_cash}")    
         return self.trader.order_stock_async(
             self.account,
             stock_code,

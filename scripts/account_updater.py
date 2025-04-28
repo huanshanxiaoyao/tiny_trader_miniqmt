@@ -196,13 +196,15 @@ class AccountUpdater:
         trades = self.trader.query_stock_trades(self.account)
         trades_df = pd.DataFrame([
             {
-                "证券代码": trade.stock_code,
-                "成交数量": trade.traded_volume,
-                "成交均价": trade.traded_price,
-                "成交金额": trade.traded_amount,
-                "订单编号": trade.order_id,
-                "成交编号": trade.traded_id,
-                "成交时间": datetime.fromtimestamp(trade.traded_time).strftime('%H:%M:%S')
+                "StockCode": trade.stock_code,
+                "Volume": trade.traded_volume,
+                "Price": trade.traded_price,
+                "Value": trade.traded_amount,
+                "TradeType":trade.order_type,
+                "Remark": trade.order_remark,
+                "OrderId": trade.order_id,
+                "TradeId": trade.traded_id,
+                "TradeTime": datetime.fromtimestamp(trade.traded_time).strftime('%H:%M:%S')
             }
             for trade in trades
         ])

@@ -21,7 +21,7 @@ class Strategy1002(BaseStrategy):
         self.max_position = 500     # 最大持仓数量
         self.min_position = 100      # 最小持仓数量
         self.single_trade_amount = 200  # 单次交易数量
-        self.single_trade_value = 10000  # 单次交易金额
+        self.single_trade_value = 8000  # 单次交易金额
         self.interval = 300          # 交易间隔（秒）
         
         # 信号状态记录
@@ -45,6 +45,7 @@ class Strategy1002(BaseStrategy):
                 continue
                 
             current_price = tick['lastPrice']
+            stock.current_price = current_price
             
             # 更新价格历史
             if stock.code in self.code2daily:

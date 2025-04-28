@@ -19,7 +19,6 @@ class LocalAccount(BaseAccount):
         self.positions = {}
         self.trades = []
 
-        
         self.submit_trade_count = 0
 
         self.last_update_time = 0
@@ -62,7 +61,7 @@ class LocalAccount(BaseAccount):
             
             # 计算当前仓位比例（市值占总资产的比例）
             if self.total_asset > 0:
-                self.position_ratio = (1 - self.fresh_cash) / self.total_asset
+                self.position_ratio = (1 - self.free_cash / self.total_asset)
             else:
                 self.position_ratio = 0
                 

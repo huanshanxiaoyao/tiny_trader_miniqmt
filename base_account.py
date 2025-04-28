@@ -264,9 +264,13 @@ class BaseAccount:
             'last_update_time': self.last_update_time
         }
     
-    def get_available_cash(self):
+    def get_free_cash(self):
         """获取可使用资金"""
         return self.free_cash
+
+    def get_frozen_cash(self):
+        """获取可使用资金"""
+        return self.frozen_cash
     
     def get_total_asset(self):
         """获取总资产"""

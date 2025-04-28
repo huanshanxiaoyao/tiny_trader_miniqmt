@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class BaseStrategy(ABC):
     """策略基类"""
     def __init__(self, target_codes):
