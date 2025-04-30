@@ -7,7 +7,7 @@ TRADER_PATH = r"D:\Apps\ZJ_QMT\userdata_mini"
 
 # 策略配置
 STRATEGY_CONFIG = {
-    "enabled_strategies": [1001,1004],  # 启用的策略ID列表
+    "enabled_strategies": [1001,1002],  # 启用的策略ID列表
     "backtest_strategies": [1002],  # 回测的策略ID列表
 }
 

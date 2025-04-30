@@ -1,1 +1,1 @@
-PositionLevel = 0.6
+PositionLevel = 0.5

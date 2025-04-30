@@ -89,13 +89,13 @@ class DataProvider:
 if __name__ == '__main__':
     data_provider = DataProvider()
     code_list = ["000001.SZ", "600000.SH","839493.BJ"]
-    start_date = "20240101"
-    end_date = "20241231"
+    start_date = "20250427"
+    end_date = "20250428"
     from config import BJ_ALL,BASKET2, SH50
     #prices = data_provider.get_daily_data(SH50, start_date, end_date)
     #for code, prices in prices.items():
     #    print(f"{code} prices: {type(prices)}, {prices}")
-    #data_provider.download_history_data_incrementally(SH50)
+    data_provider.download_history_data_incrementally(SH50)
     data = xtdata.get_market_data(
             ['close'],
             ["601398.SH"],

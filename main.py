@@ -114,6 +114,11 @@ def on_tick_data(ticks):
     
     # 风险评估
     reviewed_signals = risk_manager.evaluate_signals(all_signals, using_account)
+    
+    #实盘实操的时候，需要从trader接口拉取服务器上的账户和交易信息，实盘模拟的时候，再simTrader里面直接调用了
+    #所有这里只对实盘实操的时候生效
+    if not using_account.is_simulated and (len(reviewed_signals) > 0 or using_account.need_update()):
+        using_account.update_positions(trader.get_account_info(), trader.get_positions(), trader.get_trades(), id2stock)
     if not reviewed_signals:
         return
     
@@ -126,10 +131,7 @@ def on_tick_data(ticks):
         
         logger.info(f"执行交易: {trade_type} {stock.code} {amount}, ret: {ret}")
 
-    #实盘实操的时候，需要从trader接口拉取服务器上的账户和交易信息，实盘模拟的时候，再simTrader里面直接调用了
-    #所有这里只对实盘实操的时候生效
-    if not using_account.is_simulated and (len(reviewed_signals) > 0 or using_account.need_update()):
-        using_account.update_positions(trader.get_account_info(), trader.get_positions(), trader.get_trades(), id2stock)
+    
 
 # 在main函数中，修改模拟交易部分的代码
 def main(use_sim=False, account_id=ACCOUNT_ID):
