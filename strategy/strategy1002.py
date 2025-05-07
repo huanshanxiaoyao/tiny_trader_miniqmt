@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from logger import logger  
+from data_provider import DataProvider
 from .base_strategy import BaseStrategy
 import numpy as np
 
@@ -147,12 +148,7 @@ class Strategy1002(BaseStrategy):
         return backtest_signals
 
 
-    def fill_data(self, data_provider, start_date=None, end_date=None):
-        """
-        准备策略所需的历史数据
-        :param data_provider: DataProvider对象
-        :return: bool, 数据准备是否成功
-        """
+    def fill_data(self, start_date=None, end_date=None):
         try:
             # 获取所有目标股票代码
             code_list = [stock.code for stock in self.target_stocks]
@@ -165,8 +161,8 @@ class Strategy1002(BaseStrategy):
                 start_date = (datetime.now() - timedelta(days=30)).strftime("%Y%m%d")
                 end_date = datetime.now().strftime("%Y%m%d")
             
-            # 获取历史价格数据
-            self.code2daily = data_provider.get_daily_data(code_list, start_date, end_date)
+            # 获取历史价格数据 - 修改这里，直接使用静态方法
+            self.code2daily = DataProvider.get_daily_data(code_list, start_date, end_date)
             
             # 初始化信号状态
             for code in code_list:

@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from xtquant import xtdata
 from logger import logger  
+from data_provider import DataProvider
 from .base_strategy import BaseStrategy
 
 class Strategy1001(BaseStrategy):
@@ -167,12 +168,7 @@ class Strategy1001(BaseStrategy):
             
         return False
 
-    def fill_data(self, data_provider):
-        """
-        准备策略所需的历史数据
-        :param data_provider: DataProvider对象
-        :return: bool, 数据准备是否成功
-        """
+    def fill_data(self):
         try:
             # 获取所有目标股票代码
             code_list = [stock.code for stock in self.target_stocks]
@@ -184,8 +180,8 @@ class Strategy1001(BaseStrategy):
             end_date = datetime.now().strftime('%Y%m%d')
             start_date = (datetime.now() - timedelta(days=10)).strftime('%Y%m%d')
             
-            # 获取历史均价
-            self.code2daily = data_provider.get_daily_data(code_list, start_date, end_date)
+            # 获取历史均价 - 修改这里，直接使用静态方法
+            self.code2daily = DataProvider.get_daily_data(code_list, start_date, end_date)
             # 计算历史均价
             self.code2avg = {code: sum(prices) / len(prices) for code, prices in self.code2daily.items() if prices}
             

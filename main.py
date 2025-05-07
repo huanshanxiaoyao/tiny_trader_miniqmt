@@ -23,7 +23,6 @@ sys.path.append(current_dir)
 # 全局变量
 id2stock = {}  # 股票代码到MyStock对象的映射
 strategies = []  # 策略列表
-data_provider = None  # 数据提供者
 risk_manager = None  # 风险管理器
 trader = None  # 交易接口
 
@@ -75,12 +74,12 @@ def init_strategies():
 
 def prepare_data():
     """准备历史数据"""
-    global data_provider, strategies
+    global strategies
     logger.info("准备历史数据...")
     
     # 为每个策略准备数据
     for strategy in strategies:
-        success = strategy.fill_data(data_provider)
+        success = strategy.fill_data()
         if not success:
             logger.warning(f"警告: 策略 {strategy.__class__.__name__} 数据准备失败")
         else:

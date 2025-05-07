@@ -28,6 +28,6 @@ class StrategyFactory:
         elif strategy_id == 1003:
             return Strategy1003(target_codes)
         elif strategy_id == 1004:
-            return Strategy1004(target_codes, STRATEGY_PARAMS[strategy_id]["codeBJ2codeA"])           
+            return Strategy1004(target_codes, STRATEGY_PARAMS[strategy_id]["correlations"])           
         else:
             raise ValueError(f"未知的策略ID: {strategy_id}")

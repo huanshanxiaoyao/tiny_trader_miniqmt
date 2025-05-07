@@ -8,15 +8,29 @@ class DataProvider:
     数据提供者类
     用于获取历史行情数据和离线数据
     """
-    def __init__(self):
-        pass
-
-    def get_trading_calendar(self, start_date, end_date):
+    @staticmethod
+    def get_trading_calendar(start_date, end_date):
         #xtdata本来有接口，但需要收费，暂时先使用本地数据,目前只支持2024和2025年日期
         #return xtdata.get_trading_calendar(start_date, end_date)
         return get_trading_days(start_date, end_date) 
 
-    def download_history_data_incrementally(self, code_list, period='1d'):
+    @staticmethod
+    def get_full_ticks(codes):
+        data = xtdata.get_full_tick(codes)
+        return data
+
+    @staticmethod
+    def get_market_data_ex(fields, codes, period, start_time):
+        data = xtdata.get_market_data_ex(fields, codes, period, start_time)
+        return data
+
+    @staticmethod
+    def get_local_data(fileds, codes, period, start_date, end_date):
+        data = xtdata.get_local_data(fileds, codes, period, start_date, end_date)
+        return data
+
+    @staticmethod
+    def download_history_data_incrementally(code_list, period='1d'):
         """
         增量下载指定股票代码列表的历史数据
         :param code_list: 股票代码列表
@@ -43,7 +57,8 @@ class DataProvider:
         logger.info(f"历史数据下载完成，成功: {success_count}/{total_count}")
         return success_count
 
-    def get_daily_data(self, code_list, start_date, end_date):
+    @staticmethod
+    def get_daily_data(code_list, start_date, end_date):
         """
         获取指定日期范围内的股票日均价
         :param code_list: 股票代码列表

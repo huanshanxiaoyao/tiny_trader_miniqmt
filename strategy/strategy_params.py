@@ -1,4 +1,14 @@
 from stock_code_config import *
+import json
+
+#TODO
+correlation_file_path = "../stock_miner/shared/correlation_results.json"
+try:
+    with open(correlation_file_path, 'r', encoding='utf-8') as file:
+        correlation_results = json.load(file)
+except FileNotFoundError:
+    print(f"File not found: {correlation_file_path}")
+    correlation_results = {}
 
 STRATEGY_PARAMS = {
     1001: {
@@ -12,7 +22,7 @@ STRATEGY_PARAMS = {
     },
     1004: {
         "target_codes": BJCODE2RELATED_A.keys(),
-        "codeBJ2codeA":BJCODE2RELATED_A
+        "correlations":correlation_results
     }
 }
 
@@ -22,7 +32,10 @@ Active_Codes = []
 for k, v in STRATEGY_PARAMS.items():
     Active_Codes.extend(v["target_codes"])
 # 添加所有关联的A股代码
-for k, v in BJCODE2RELATED_A.items():
-    Active_Codes.extend(v)
+#for k, v in correlation_results.items():
+#    Active_Codes.append(k)
+#    sim_stocks = v['similar_stocks']
+#    for sim_stock in sim_stocks:
+#        Active_Codes.append(sim_stock['code'])
 # 去除重复项
 Active_Codes = list(set(Active_Codes))

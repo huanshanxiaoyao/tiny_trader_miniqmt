@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from logger import logger  
 from .base_strategy import BaseStrategy
 from indicators import TechnicalIndicators
+from data_provider import DataProvider
 import numpy as np
 
 class Strategy1003(BaseStrategy):
@@ -136,12 +137,7 @@ class Strategy1003(BaseStrategy):
         
         return None
 
-    def fill_data(self, data_provider, start_date=None, end_date=None):
-        """
-        准备策略所需的历史数据
-        :param data_provider: DataProvider对象
-        :return: bool, 数据准备是否成功
-        """
+    def fill_data(self, start_date=None, end_date=None):
         try:
             # 获取所有目标股票代码
             code_list = [stock.code for stock in self.target_stocks]
@@ -149,14 +145,14 @@ class Strategy1003(BaseStrategy):
             if not code_list:
                 logger.warning("没有目标股票，无法获取历史数据")
                 return False
-
+    
             if start_date is None:
                 start_date = (datetime.now() - timedelta(days=365)).strftime("%Y%m%d")
                 end_date = datetime.now().strftime("%Y%m%d")
             
-            trade_days = data_provider.get_trading_calendar(start_date, end_date)
-            # 获取历史价格数据
-            self.code2daily = data_provider.get_daily_data(code_list, start_date, end_date)
+            trade_days = DataProvider.get_trading_calendar(start_date, end_date)
+            # 获取历史价格数据 - 修改这里，直接使用静态方法
+            self.code2daily = DataProvider.get_daily_data(code_list, start_date, end_date)
             
             # 数据完整性验证
             data_lengths = {}
