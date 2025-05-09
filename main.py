@@ -31,7 +31,6 @@ def init_stocks():
     global id2stock
     logger.info("初始化股票对象...")
 
-    #TODO 这里需要再思考一下，由于是先注册stock再注册策略，同时为了避免太多浪费，所以还需要一个个集合的hardcord在这里
     active_codes = Active_Codes
     #active_codes.extend(BASKET1)
 
@@ -207,7 +206,7 @@ def main(use_sim=False, account_id=ACCOUNT_ID):
         # 主循环，保持程序运行,且做部分更新等判断
         round_count = 0
         while True:
-            time.sleep(0.1)
+            time.sleep(0.2)
             round_count += 1
             
     except KeyboardInterrupt:

@@ -3,16 +3,25 @@ import json
 
 #TODO
 correlation_file_path = "../stock_miner/shared/correlation_results.json"
+safe_range_file_path = "../stock_miner/shared/stock_safe_range_20250509.json"
 try:
     with open(correlation_file_path, 'r', encoding='utf-8') as file:
         correlation_results = json.load(file)
 except FileNotFoundError:
-    print(f"File not found: {correlation_file_path}")
+    print(f"correlation file not found: {correlation_file_path}")
     correlation_results = {}
+
+try:
+    with open(safe_range_file_path, 'r', encoding='utf-8') as file:
+        safe_range = json.load(file)
+except FileNotFoundError:
+    print(f"File not found: {correlation_file_path}")
+    safe_range = {}
 
 STRATEGY_PARAMS = {
     1001: {
-        "target_codes": BJ50  # 策略目标股票代码
+        "target_codes": BJ50_Trust,  
+        "safe_range": safe_range,
     },
     1002: {
         "target_codes": SH50  # 策略目标股票代码
@@ -21,7 +30,7 @@ STRATEGY_PARAMS = {
         "target_codes": SH50  # 策略目标股票代码
     },
     1004: {
-        "target_codes": BJCODE2RELATED_A.keys(),
+        "target_codes": correlation_results.keys(),
         "correlations":correlation_results
     }
 }

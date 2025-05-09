@@ -22,12 +22,12 @@ class StrategyFactory:
         
         # 创建对应策略实例
         if strategy_id == 1001:
-            return Strategy1001(target_codes)
+            return Strategy1001(target_codes, STRATEGY_PARAMS[1001]["safe_range"])
         elif strategy_id == 1002:
             return Strategy1002(target_codes)
         elif strategy_id == 1003:
             return Strategy1003(target_codes)
         elif strategy_id == 1004:
-            return Strategy1004(target_codes, STRATEGY_PARAMS[strategy_id]["correlations"])           
+            return Strategy1004(target_codes, STRATEGY_PARAMS[1004]["correlations"])           
         else:
             raise ValueError(f"未知的策略ID: {strategy_id}")
