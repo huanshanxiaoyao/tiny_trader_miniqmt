@@ -3,7 +3,7 @@ import json
 
 #TODO
 correlation_file_path = "../stock_miner/shared/correlation_results.json"
-safe_range_file_path = "../stock_miner/shared/stock_safe_range_20250509.json"
+safe_range_file_path = "../stock_miner/shared/stock_safe_range.json"
 try:
     with open(correlation_file_path, 'r', encoding='utf-8') as file:
         correlation_results = json.load(file)

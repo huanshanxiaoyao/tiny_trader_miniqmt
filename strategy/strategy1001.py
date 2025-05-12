@@ -86,6 +86,7 @@ class Strategy1001(BaseStrategy):
         # 判断买入条件
         if self._should_buy(stock, current_price, market_rise, safe_range):
             amount = self.single_buy_value // current_price
+            logger.info(f"触发买入条件，code:{stock.code},current_price:{current_price},cost_price:{stock.cost_price}")
             return (stock, 'buy', amount,  self.str_remark)
             
         # 判断卖出条件

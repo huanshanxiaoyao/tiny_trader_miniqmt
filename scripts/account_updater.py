@@ -255,7 +255,7 @@ class AccountUpdater:
 
 # 修改主函数部分
 if __name__ == "__main__":
-    path = r"D:\Apps\ZJ_QMT\userdata_mini"
+    path = r"D:\Apps\ZJ_QMT3\userdata_mini"
     account_id = "6681802088"
     
     try:
