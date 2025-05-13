@@ -86,7 +86,6 @@ class Strategy1001(BaseStrategy):
         # 判断买入条件
         if self._should_buy(stock, current_price, market_rise, safe_range):
             amount = self.single_buy_value // current_price
-            logger.info(f"触发买入条件，code:{stock.code},current_price:{current_price},cost_price:{stock.cost_price}")
             return (stock, 'buy', amount,  self.str_remark)
             
         # 判断卖出条件
@@ -119,6 +118,7 @@ class Strategy1001(BaseStrategy):
         # 没有持仓时的买入条件
         if (stock.cost_price == 0 and ( current_price < self.code2avg.get(stock.code) * self.buy_threshold
             or current_price < short_sma5 - short_atr10 ) ):
+            logger.info(f"触发买入条件，code:{stock.code},current_price:{current_price},avg_price:{self.code2avg.get(stock.code)}, short_sma5:{short_sma5}, short_atr10:{short_atr10}")
             return True
         
         current_value = stock.current_position * current_price
@@ -126,12 +126,14 @@ class Strategy1001(BaseStrategy):
         # 普通买入条件
         if (current_value < self.soft_max_position_value and 
             ( current_price < stock.cost_price * self.buy_threshold or current_price < short_sma5 - short_atr10 ) ):
+            logger.info(f"触发买入条件，code:{stock.code},current_price:{current_price},avg_price:{stock.cost_price}, short_sma5:{short_sma5}, short_atr10:{short_atr10}")
             return True
             
         # 接近最大仓位的买入条件
         if (current_value >= self.soft_max_position_value and 
             current_value < self.max_position_value and 
             (current_price < stock.cost_price * self.buy_threshold_2 or current_price < short_sma5 - 1.2 * short_atr10 )):
+            logger.info(f"触发买入条件，code:{stock.code},current_price:{current_price},cost_price:{stock.cost_price},short_sma5:{short_sma5}, short_atr10:{short_atr10}")
             return True
             
         return False
