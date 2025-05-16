@@ -21,10 +21,14 @@ class Strategy1004(BaseStrategy):
 
         self.correlations_results = correlations
         self.a_codes = []
+        a_code_count = 0
         for k, v in self.correlations_results.items():
+            if a_code_count > 98: #手动订阅 有100的限制，开Vip可以到300
+                break
             sim_stocks = v['similar_stocks']
             for stock in sim_stocks:
                 self.a_codes.append(stock.get('code'))
+                a_code_count += 1
 
         self.a_codes = list(set(self.a_codes))
         #TODO

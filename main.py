@@ -9,7 +9,7 @@ from local_account import LocalAccount
 from strategy.strategy_factory import StrategyFactory
 from strategy.strategy_params import STRATEGY_PARAMS, Active_Codes
 from config import ACCOUNT_ID, TRADER_PATH, STRATEGY_CONFIG, DATA_CONFIG
-from stock_code_config import BASKET1, BASKET2, BASKET3, CODE2RELATED,SH50,BJ50
+from stock_code_config import BASKET1, BASKET2, BASKET3, SH50,BJ50
 from stock_code_config import BJSE_INDEX, SHSE_INDEX, HS_INDEX
 from my_stock import MyStock
 from logger import logger, tick_logger  # 修改导入语句
