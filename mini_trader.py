@@ -36,18 +36,18 @@ class MiniTrader:
         self.account = StockAccount(account_id)
         self.callback = MiniTraderCallback()
         self.trader.register_callback(self.callback)
-        
+
     def connect(self):
         """连接交易终端并订阅账户"""
         self.trader.start()
         if self.trader.connect() != 0:
             logger.error('【软件终端连接失败！】\n 请运行并登录miniQMT.EXE终端。')
             return False
-            
+
         if self.trader.subscribe(self.account) != 0:
             logger.error('【账户信息订阅失败！】\n 账户配置错误，检查账号是否正确。')
             return False
-            
+
         logger.info('【软件终端连接成功！】')
         logger.info('【账户信息订阅成功！】')
         return True
@@ -152,23 +152,23 @@ class MiniTrader:
         # 获取账户可用资金
         asset = self.trader.query_stock_asset(self.account)
         available_cash = asset.cash
-    
+
         # 获取当前价格 #TODO
         if price_type == xtconstant.LATEST_PRICE:
             full_tick = xtdata.get_full_tick([stock_code])
             current_price = full_tick[stock_code]['lastPrice']
         else:
             current_price = price
-        
+
                 # 确定买入金额
         buy_amount = min(amount, available_cash/current_price)
         buy_volume = buy_amount
-        
+
         if buy_volume <= 0:
             logger.warning(f"可买数量为0，可用资金：{available_cash}，目标金额：{amount}")
             return None
 
-        logger.info(f"买入 {stock_code}: 金额{amount}, 价格类型{price_type}, 价格{price},  备注{remark}, 可用资金{available_cash}")    
+        logger.info(f"买入 {stock_code}: 金额{amount}, 价格类型{price_type}, 价格{price},  备注{remark}, 可用资金{available_cash}")
         return self.trader.order_stock_async(
             self.account,
             stock_code,
@@ -193,15 +193,15 @@ class MiniTrader:
         # 获取持仓信息
         positions = self.trader.query_stock_positions(self.account)
         position_available = {p.stock_code: p.can_use_volume for p in positions}
-        
+
         # 确定可卖数量
         available_volume = position_available.get(stock_code, 0)
         sell_volume = min(volume, available_volume)
-        
+
         if sell_volume <= 0:
             logger.warning(f"可卖数量为0，持仓可用：{available_volume}，目标数量：{volume}")
             return None
-            
+
         logger.info(f"卖出 {stock_code}: 数量{sell_volume}股")
         return self.trader.order_stock_async(
             self.account,
@@ -216,16 +216,21 @@ class MiniTrader:
 
 # 使用示例
 if __name__ == "__main__":
-    path = r"D:\Apps\ZJ_QMT3\userdata_mini"
-    account_id = "6681802088"
-    
+    from dotenv import load_dotenv
+    import os
+
+    load_dotenv()
+    account_id = os.getenv("ACCOUNT_ID")
+    path = os.getenv("TRADER_PATH")
+    print(f"account_id:{account_id}, path:{path}")
+
     trader = MiniTrader(path, account_id)
     if trader.connect():
         # 打印账户信息
         trader.print_summary()
-        
+
         # 买入示例：买入浦发银行2万元
         #trader.buy_stock('600000.SH', 20000, remark='buy_example')
-        
+
         # 卖出示例：卖出500股
         #trader.sell_stock('513130.SH', 500, remark='sell_example')
