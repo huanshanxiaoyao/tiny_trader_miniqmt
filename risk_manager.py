@@ -136,7 +136,7 @@ class RiskManager:
                 reviewed_signals.append((stock, trade_type, amount, remark))
                 #logger.info(f"更新股票 {stock.code} 最后买入时间: {datetime.fromtimestamp(current_time)}")
             elif trade_type == 'sell':
-                if stock.current_position <= 0:
+                if stock.free_position <= 0:
                     logger.warning(f"股票 {stock.code} 没有持仓，不允许卖出")
                     continue
                 stock.last_sell_time = current_time

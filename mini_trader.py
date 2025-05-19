@@ -216,7 +216,7 @@ class MiniTrader:
 
 # 使用示例
 if __name__ == "__main__":
-    path = r"D:\Apps\ZJ_QMT\userdata_mini"
+    path = r"D:\Apps\ZJ_QMT3\userdata_mini"
     account_id = "6681802088"
     
     trader = MiniTrader(path, account_id)

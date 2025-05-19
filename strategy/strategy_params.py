@@ -18,9 +18,11 @@ except FileNotFoundError:
     print(f"File not found: {correlation_file_path}")
     safe_range = {}
 
+TempCodes = list(set(BJ50_Trust + HS300) - set(SH50))
+
 STRATEGY_PARAMS = {
     1001: {
-        "target_codes": BJ50_Trust,  
+        "target_codes": TempCodes,  
         "safe_range": safe_range,
     },
     1002: {

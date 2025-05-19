@@ -203,7 +203,7 @@ def main(use_sim=False, account_id=ACCOUNT_ID):
         logger.info(f"订阅行情: {stock_codes}")
         xtdata.subscribe_whole_quote(stock_codes, callback=on_tick_data)
         
-        # 主循环，保持程序运行,且做部分更新等判断
+        # 主循环，保持程序运行
         round_count = 0
         while True:
             time.sleep(0.2)

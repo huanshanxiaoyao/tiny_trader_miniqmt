@@ -38,7 +38,7 @@ class Strategy1004(BaseStrategy):
         logger.info(f"策略1004初始化，关联股票数量 {len(self.a_codes)}")
 
         self.a_min_increase = 0.02  # A股最小涨幅2%
-        self.bj_max_increase = 0.03  # 北交所最大涨幅3%
+        self.bj_max_increase = 0.05  # 北交所最大涨幅3%
         
         #策略判断阈值，后续考虑放到配置中
         self.undervalued = -1
@@ -99,11 +99,8 @@ class Strategy1004(BaseStrategy):
 
             #slope, pct = self.code2tick_seq[bj_code].calculate_price_trend()
             # 计算股票涨幅
-            pct = current_price/lastClose - 1 if lastClose else 0
-            logger.info(f"股票{bj_code}涨幅 {pct:.2%} ")
-
-            # 北交所股票涨幅
-            bj_increase = pct
+            bj_increase = current_price/lastClose - 1 if lastClose else 0
+            logger.info(f"股票{bj_code}涨幅 {bj_increase:.2%} ")
             
             # 获取相关联的A股股票
             sim_stocks = cor_result.get('similar_stocks', [])
@@ -140,16 +137,6 @@ class Strategy1004(BaseStrategy):
                 volume_multiple = today_minute_voluem / history_avg_volume if history_avg_volume else 0 
                 volume_surge = volume_multiple >= 3.0
                 
-                
-                # 如果满足成交量激增条件，且涨幅差大于3%，strong_buy加1
-                if volume_surge and (a_pct - bj_increase > 0.03):
-                    buy_remark.append(f"股票{a_code}  量价齐涨 分钟点 {start_minutes}今日成交量 {today_minute_voluem}, 历史平均成交量 {history_avg_volume},今日涨幅: {a_pct:.2%}")
-                    buy_support += 1
-
-                if a_pct < bj_increase - 0.07 and a_pct < 0:
-                    sell_remark.append(f"股票{a_code}  分钟点,大幅下跌，今日涨幅: {a_pct:.2%}")
-                    sell_support += 1
-                
                 # 获取北交所股票当前价格
                 bj_current_price = stock.current_price
                 # 获取A股股票当前价格
@@ -160,27 +147,36 @@ class Strategy1004(BaseStrategy):
                 # 获取均值和标准差
                 mean = a_stock.get('mean')
                 std = a_stock.get('std')
-                
-                # 只有当均值和标准差都存在时才进行z-score计算
+
                 if mean is not None and std is not None and std != 0:
-                    # 计算z-score：(当前比值 - 均值) / 标准差
                     current_z_score = (price_ratio - mean) / std
-                    # 从历史数据中获取昨日z-score
-                    yesterday_z_score = a_stock.get('z_score')
-                    
-                    if yesterday_z_score is not None:
-                        logger.info(f"股票{a_code}当前z-score: {current_z_score:.2f}, 昨日z-score: {yesterday_z_score:.2f}, 今日涨幅: {a_pct:.2%},分钟点 {start_minutes}今日成交量 {today_minute_voluem}, 历史平均成交量 {history_avg_volume}")
-                        
-                        # z-score相关判断
-                        if (current_z_score < self.undervalued and (current_z_score - yesterday_z_score) < -0.2) or (current_z_score < 0 - self.outlier_value):
-                            buy_remark.append(f"股票{a_code} 开始低估 当前z-score: {current_z_score:.2f}, 昨日z-score: {yesterday_z_score:.2f}")
-                            buy_support += 1
-                        
-                        if (current_z_score > self.overvalued and (current_z_score - yesterday_z_score) > 0.3) or (current_z_score > self.outlier_value):
-                            sell_remark.append(f"股票{a_code} 开始高估 当前z-score: {current_z_score:.2f}, 昨日z-score: {yesterday_z_score:.2f}")
-                            sell_support += 1
                 else:
-                    logger.warning(f"股票{a_code}缺少均值或标准差数据，跳过z-score计算")
+                    continue
+
+                # 如果满足成交量激增条件，且涨幅差大于3%，strong_buy加1
+                if volume_surge and (a_pct - bj_increase > 0.03) and current_z_score < -0.5:
+                    buy_remark.append(f"股票{a_code}  量价齐涨 分钟点 {start_minutes}今日成交量 {today_minute_voluem}, 历史平均成交量 {history_avg_volume},今日涨幅: {a_pct:.2%}")
+                    buy_support += 1
+
+                if a_pct < bj_increase - 0.07 and a_pct < 0:
+                    sell_remark.append(f"股票{a_code}  分钟点,大幅下跌，今日涨幅: {a_pct:.2%}")
+                    sell_support += 1
+                
+                # 从历史数据中获取昨日z-score
+                yesterday_z_score = a_stock.get('z_score')
+                
+                if yesterday_z_score is not None:
+                    logger.info(f"股票{a_code}当前z-score: {current_z_score:.2f}, 昨日z-score: {yesterday_z_score:.2f}, 今日涨幅: {a_pct:.2%},分钟点 {start_minutes}今日成交量 {today_minute_voluem}, 历史平均成交量 {history_avg_volume}")
+                    
+                    # z-score相关判断
+                    if (current_z_score < self.undervalued and (current_z_score - yesterday_z_score) < -0.2) or (current_z_score < 0 - self.outlier_value):
+                        buy_remark.append(f"股票{a_code} 开始低估 当前z-score: {current_z_score:.2f}, 昨日z-score: {yesterday_z_score:.2f}")
+                        buy_support += 1
+                    
+                    if (current_z_score > self.overvalued and (current_z_score - yesterday_z_score) > 0.3) or (current_z_score > self.outlier_value):
+                        sell_remark.append(f"股票{a_code} 开始高估 当前z-score: {current_z_score:.2f}, 昨日z-score: {yesterday_z_score:.2f}")
+                        sell_support += 1
+
                 if sell_support > 0:
                     strong_sell += 1
                 if buy_support > 0:
@@ -191,7 +187,7 @@ class Strategy1004(BaseStrategy):
             if strong_sell > 1:
                 volume = self.single_trade_value // current_price
                 remark = f"A股强卖信号: strong_sell={strong_sell} :" + " ".join(sell_remark)
-                logger.info(f"触发卖出信号: 股票 {bj_code} 涨幅 {pct:.2%} {remark}")
+                logger.info(f"触发卖出信号: 股票 {bj_code} 涨幅 {bj_increase:.2%} {remark}")
                 trade_signals.append((stock, 'sell', volume, self.str_remark))
             
             elif strong_buy > 1:
@@ -199,7 +195,7 @@ class Strategy1004(BaseStrategy):
                 if bj_increase < self.bj_max_increase:
                     volume = self.single_trade_value // current_price
                     remark = f"A股强买信号: strong_buy={strong_buy} :" + " ".join(buy_remark)
-                    logger.info(f"触发买入信号: 股票 {bj_code} 涨幅 {pct:.2%} {remark}")
+                    logger.info(f"触发买入信号: 股票 {bj_code} 涨幅 {bj_increase:.2%} {remark}")
                     trade_signals.append((stock, 'buy', volume, self.str_remark))
 
         return trade_signals
