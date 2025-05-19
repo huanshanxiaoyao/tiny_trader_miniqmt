@@ -1,17 +1,15 @@
 from stock_code_config import *
+from dotenv import load_dotenv
+import os
 
-# 交易账户配置
-ACCOUNT_ID = "6681802088"
-TRADER_PATH = r"D:\Apps\ZJ_QMT3\userdata_mini"
-
-
+load_dotenv()
+ACCOUNT_ID = os.getenv("ACCOUNT_ID")
+TRADER_PATH = os.getenv("TRADER_PATH")
 # 策略配置
 STRATEGY_CONFIG = {
     "enabled_strategies": [1001,1004],  # 启用的策略ID列表
     "backtest_strategies": [1002],  # 回测的策略ID列表
 }
-
-
 
 
 # 数据配置
