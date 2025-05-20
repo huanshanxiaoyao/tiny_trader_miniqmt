@@ -24,6 +24,7 @@ STRATEGY_PARAMS = {
     1001: {
         "target_codes": TempCodes,  
         "safe_range": safe_range,
+        "aggressiveness" : -2, # -2 超级保守， -1 保守， 0 平衡， 1 激进， 2 超级激进
     },
     1002: {
         "target_codes": SH50  # 策略目标股票代码

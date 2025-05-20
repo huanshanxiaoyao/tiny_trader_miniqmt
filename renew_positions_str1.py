@@ -89,7 +89,7 @@ def init(C):
     # 设置目标股票代码
     C.target_codes = ['832491.BJ', '832522.BJ',"835174.BJ","836942.BJ","920116.BJ","839493.BJ"]
     C.set_universe(C.target_codes)
-    C.accID = '6681802088'
+    C.accID = '1911107358'
     C.need_refresh_position = 0
     
     # 初始化股票对象
@@ -271,7 +271,7 @@ def handlebar(C):
                 C.need_refresh_position = 3
                 
 
-def submit_sell_order(C, stock, sell_amount, price, strategy_id):
+def submit_sell_order(C, stock, sell_amount, price, strategy_remark):
     """
     提交卖出指令并更新持仓信息
     
@@ -280,16 +280,16 @@ def submit_sell_order(C, stock, sell_amount, price, strategy_id):
         code: 股票代码
         sell_amount: 卖出数量
         price: 卖出价格
-        strategy_id: 策略编号
+        strategy_remark: 策略编号
     """
     code = stock.code
     # 执行卖出
-    passorder(24, 1101, C.accID, code, 11, price, sell_amount, strategy_id, 1, "", C)
+    passorder(24, 1101, C.accID, code, 11, price, sell_amount, strategy_remark, 1, strategy_remark, C)
     
     # 记录交易日志
     print(f"卖出 {code}: 价格={price}, 数量={sell_amount}")
 
-def submit_buy_order(C, stock, buy_amount, price, strategy_id):
+def submit_buy_order(C, stock, buy_amount, price, strategy_remark):
     """
     提交买入指令并更新持仓信息
     
@@ -298,11 +298,11 @@ def submit_buy_order(C, stock, buy_amount, price, strategy_id):
         code: 股票代码
         buy_amount: 买入数量
         price: 买入价格
-        strategy_id: 策略编号
+        strategy_remark: 策略编号
     """
     code = stock.code
     # 执行买入
-    passorder(23, 1101, C.accID, code, 11, price, buy_amount, strategy_id, 1, "", C)
+    passorder(23, 1101, C.accID, code, 11, price, buy_amount, strategy_remark, 1, strategy_remark, C)
     
     # 记录交易日志
     print(f"买入 {code}: 价格={price}, 数量={buy_amount}")

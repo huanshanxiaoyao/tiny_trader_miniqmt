@@ -22,7 +22,7 @@ class StrategyFactory:
         
         # 创建对应策略实例
         if strategy_id == 1001:
-            return Strategy1001(target_codes, STRATEGY_PARAMS[1001]["safe_range"])
+            return Strategy1001(target_codes, STRATEGY_PARAMS[1001]["safe_range"], STRATEGY_PARAMS[1001]["aggressiveness"])
         elif strategy_id == 1002:
             return Strategy1002(target_codes)
         elif strategy_id == 1003:

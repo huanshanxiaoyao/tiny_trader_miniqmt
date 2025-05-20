@@ -3,6 +3,7 @@ from xtquant import xtdata
 from logger import logger  
 from data_provider import DataProvider
 from .base_strategy import BaseStrategy
+import numpy as np
 
 class Strategy1001(BaseStrategy):
     """
@@ -10,25 +11,44 @@ class Strategy1001(BaseStrategy):
     策略目标：利用周期内股价的波动，低点买入，高点时卖出，降低持仓成本，赚取收益
     策略假设：选中的股票中长线稳健向上
     """
-    def __init__(self, codes, safe_range):
+    def __init__(self, codes, safe_range, aggressiveness):
         super().__init__(codes)
         self.str_remark = "str1001"
         self.code2avg = {}
         self.code2daily = {}
         self.safe_range = safe_range
-        # 策略参数
-        self.buy_threshold = 0.95             # 下跌买入阈值
-        self.sell_threshold = 1.05            # 上涨卖出阈值
-        self.buy_threshold_2 = 0.92           # 下跌买入阈值2
-        self.sell_threshold_2 = 1.08          # 上涨卖出阈值2
+        self.aggressiveness = aggressiveness
+        self.init_params()
+
+
+        self.market_index = '899050.BJ'
+
+
+    def init_params(self):
+        def adjusted_exponential(x):
+            #根据激进程度，设置交易阈值
+            #当前对应[-2,-1,0,1,2]的输出[1.51,0.97,0.65,0.45,0.33]
+            if x > 2 or x < -2:
+                x = 0
+            a = 0.5
+            k = -0.5
+            b = 0.15
+            return a * np.exp(k * x) + b
+
+        step_beta = adjusted_exponential(self.aggressiveness)
+
+        self.buy_step1 = 0.3 + step_beta
+        self.buy_step2 = 0.6 + step_beta
+        self.buy_step3 = 1 + step_beta
+
+        self.sell_step1 = 0.3
+        self.sell_step2 = 0.5
 
         self.max_position_value = 32000              # 最大持仓数量
         self.min_position_value = 0               # 最小持仓数量
         self.soft_max_position_value = 24000          # 软上限持仓数量
         self.soft_min_position_value = 8000          # 软下限持仓数量
         self.single_buy_value = 8000         # 单次交易数量
-
-        self.market_index = '899050.BJ'
 
     def trigger(self, ticks):
         """
@@ -90,7 +110,6 @@ class Strategy1001(BaseStrategy):
             
         # 判断卖出条件
         elif stock.current_position > 0 and self._should_sell(stock, current_price, market_rise, safe_range):
-            logger.info(f"触发卖出信号，code:{stock.code},current_price:{current_price},cost_price:{stock.cost_price}")
             sell_amount = min(self.single_buy_value // current_price, 
                             stock.current_position - self.min_position_value // current_price)
             if sell_amount > 0:
@@ -116,24 +135,22 @@ class Strategy1001(BaseStrategy):
             return False
 
         # 没有持仓时的买入条件
-        if (stock.cost_price == 0 and ( current_price < self.code2avg.get(stock.code) * self.buy_threshold
-            or current_price < short_sma5 - 0.75 * short_atr10 ) ):
-            logger.info(f"触发买入信号，code:{stock.code},current_price:{current_price},avg_price:{self.code2avg.get(stock.code)}, short_sma5:{short_sma5}, short_atr10:{short_atr10}")
+        if (stock.cost_price == 0 and current_price < (short_ema8 - self.buy_step1 * short_atr10) ):
+            logger.info(f"触发买入信号， step1 {stock.code},current_price:{current_price}, short_ema8:{short_ema8}, short_atr10:{short_atr10}")
             return True
         
         current_value = stock.current_position * current_price
 
         # 普通买入条件
-        if (current_value < self.soft_max_position_value and 
-            ( current_price < stock.cost_price * self.buy_threshold or current_price < short_sma5 - short_atr10 ) ):
-            logger.info(f"触发买入信号，code:{stock.code},current_price:{current_price},avg_price:{stock.cost_price}, short_sma5:{short_sma5}, short_atr10:{short_atr10}")
+        if (current_value < self.soft_max_position_value and current_price < (short_sma5 - self.buy_step2 * short_atr10) ):
+            logger.info(f"触发买入信号， step2 {stock.code},current_price:{current_price},cost_price:{stock.cost_price}, short_ema8:{short_ema8}, short_atr10:{short_atr10}")
             return True
             
         # 接近最大仓位的买入条件
         if (current_value >= self.soft_max_position_value and 
             current_value < self.max_position_value and 
-            (current_price < stock.cost_price * self.buy_threshold_2 or current_price < short_sma5 - 1.2 * short_atr10 )):
-            logger.info(f"触发买入信号，code:{stock.code},current_price:{current_price},cost_price:{stock.cost_price},short_sma5:{short_sma5}, short_atr10:{short_atr10}")
+            (current_price < short_sma5 - self.buy_step3 * short_atr10 )):
+            logger.info(f"触发买入信号， step3 {stock.code},current_price:{current_price},cost_price:{stock.cost_price},short_ema8:{short_ema8}, short_atr10:{short_atr10}")
             return True
             
         return False
@@ -147,10 +164,10 @@ class Strategy1001(BaseStrategy):
         long_atr20 = safe_range.get('long_atr20')
 
         if  market_rise < 4 and current_price > long_ema55 + long_atr20 * 2:
-            logger.info(f"当前价格高于长周期EMA55 + 2倍ATR20，卖出，code:{stock.code}, current_price:{current_price}, long_ema55:{long_ema55}, long_atr20:{long_atr20}")
+            logger.info(f"触发卖出信号 当前价格高于长周期EMA55 + 2倍ATR20，卖出，code:{stock.code}, current_price:{current_price}, long_ema55:{long_ema55}, long_atr20:{long_atr20}")
             return True
         if  current_price > long_ema55 + long_atr20 * 3:
-            logger.info(f"当前价格高于长周期EMA55 + 3倍ATR20，卖出，code:{stock.code}, current_price:{current_price}, long_ema55:{long_ema55}, long_atr20:{long_atr20}")
+            logger.info(f"触发卖出信号 当前价格高于长周期EMA55 + 3倍ATR20，卖出，code:{stock.code}, current_price:{current_price}, long_ema55:{long_ema55}, long_atr20:{long_atr20}")
             return True 
 
         if stock.cost_price <= 0:
@@ -159,16 +176,15 @@ class Strategy1001(BaseStrategy):
 
         current_value = stock.current_position * current_price
         # 普通卖出条件
-        if (current_value > self.soft_min_position_value and 
-            (current_price > stock.cost_price * self.sell_threshold  or current_price > short_ema8 + short_atr10) ):
-            logger.info(f"触发卖出信号，code:{stock.code}, current_price:{current_price}, cost_price:{stock.cost_price},short_ema8 :{short_ema8} + short_atr10:{short_atr10}:")
+        if (current_value > self.soft_min_position_value and  current_price > ( short_ema8 + self.sell_step1 * short_atr10) ):
+            logger.info(f"触发卖出信号，  step1 {stock.code}, current_price:{current_price}, cost_price:{stock.cost_price},short_ema8 :{short_ema8} , short_atr10:{short_atr10}:")
             return True
             
         # 接近最小仓位的卖出条件
         if (current_value <= self.soft_min_position_value and 
             current_value > self.min_position_value and 
-            current_price > stock.cost_price * self.sell_threshold_2 ):
-            logger.info(f"触发卖出信号，code:{stock.code}, current_price:{current_price},cost_price:{stock.cost_price}, short_ema8 :{short_ema8} + short_atr10:{short_atr10}:")
+            current_price > ( short_ema8 + self.sell_step2 * short_atr10) ):
+            logger.info(f"触发卖出信号， step2 {stock.code}, current_price:{current_price},cost_price:{stock.cost_price}, short_ema8 :{short_ema8} , short_atr10:{short_atr10}:")
             return True
             
         return False
