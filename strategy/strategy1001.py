@@ -106,6 +106,7 @@ class Strategy1001(BaseStrategy):
         # 判断买入条件
         if self._should_buy(stock, current_price, market_rise, safe_range):
             amount = self.single_buy_value // current_price
+            volume = max(amount, self.one_hand_count)
             return (stock, 'buy', amount,  self.str_remark)
             
         # 判断卖出条件

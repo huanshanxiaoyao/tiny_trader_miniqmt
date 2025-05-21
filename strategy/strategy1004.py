@@ -194,6 +194,7 @@ class Strategy1004(BaseStrategy):
                 # 检查北交所股票涨幅是否小于阈值
                 if bj_increase < self.bj_max_increase:
                     volume = self.single_trade_value // current_price
+                    volume = max(volume, self.one_hand_count)
                     remark = f"A股强买信号: strong_buy={strong_buy} :" + " ".join(buy_remark)
                     logger.info(f"触发买入信号: 股票 {bj_code} 涨幅 {bj_increase:.2%} {remark}")
                     trade_signals.append((stock, 'buy', volume, self.str_remark))

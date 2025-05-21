@@ -9,6 +9,7 @@ class BaseStrategy(ABC):
         #预期mystock对象 从全局获取，全局维持一份#TODO
         self.target_stocks = []                   
         self.data_ready = False                        # 数据准备状态标志
+        self.one_hand_count = 100
         
     @abstractmethod
     def fill_data(self, data_provider, start_time=None, end_time=None):
