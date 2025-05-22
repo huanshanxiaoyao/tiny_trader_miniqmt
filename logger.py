@@ -24,7 +24,7 @@ main_handler = TimedRotatingFileHandler(
     backupCount=30,   # 保留30天的日志
     encoding='utf-8'
 )
-main_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+main_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'))
 main_handler.suffix = "%Y%m%d"  # 设置日志文件后缀格式为YYYYMMDD
 logger.addHandler(main_handler)
 
@@ -43,3 +43,19 @@ tick_handler.suffix = "%Y%m%d"  # 设置日志文件后缀格式为YYYYMMDD
 tick_logger = logging.getLogger('tick')
 tick_logger.setLevel(logging.INFO)
 tick_logger.addHandler(tick_handler)
+
+# 创建交易数据专用的处理器（按天轮转）
+trader_handler = TimedRotatingFileHandler(
+    os.path.join(log_dir, 'trader.log'),
+    when='midnight',  # 每天午夜轮转
+    interval=1,       # 间隔为1天
+    backupCount=30,   # 保留30天的日志
+    encoding='utf-8'
+)
+trader_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+trader_handler.suffix = "%Y%m%d"  # 设置日志文件后缀格式为YYYYMMDD
+
+# 创建交易专用的日志记录器
+trader_logger = logging.getLogger('trader')
+trader_logger.setLevel(logging.INFO)
+trader_logger.addHandler(trader_handler)

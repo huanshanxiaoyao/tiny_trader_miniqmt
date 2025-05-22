@@ -1,5 +1,5 @@
 from datetime import datetime
-from logger import logger
+from logger import logger, trader_logger
 from base_account import BaseAccount
 
 class LocalAccount(BaseAccount):
@@ -169,7 +169,69 @@ class LocalAccount(BaseAccount):
         self.submit_trade_count = len(self.trades)
         self.last_update_time = int(datetime.now().timestamp())
 
-        # 保存数据
-        self._save_account()
-        self._save_positions()
-        self._save_trades()
+        # 保存快照
+        self._save_snapshot(acc_info, positions_df, trades_df)
+
+    def _save_snapshot(self, acc_info, positions_df, trades_df):
+        """
+        保存账户、持仓和交易的快照到trader_logger
+        :param acc_info: 账户信息字典
+        :param positions_df: 持仓信息DataFrame
+        :param trades_df: 交易信息DataFrame
+        """
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            # 记录账户信息快照
+            trader_logger.info(f"[快照-账户信息] 时间={timestamp}, 总资产={acc_info.get('TotalAsset', 0):.2f}, "
+                              f"市值={acc_info.get('MarketValue', 0):.2f}, 可用资金={acc_info.get('FreeCash', 0):.2f}, "
+                              f"冻结资金={acc_info.get('FrozenCash', 0):.2f}, 仓位比例={self.position_ratio:.2%}")
+            
+            # 记录持仓信息快照
+            if positions_df is not None and not positions_df.empty:
+                trader_logger.info(f"[快照-持仓信息] 时间={timestamp}, 持仓数量={len(positions_df)}")
+                for _, row in positions_df.iterrows():
+                    stock_code = row["StockCode"]
+                    volume = row["Volume"]
+                    free_volume = row["FreeVolume"]
+                    frozen_volume = row.get("FrozenVolue", 0)  # 注意原始数据中的拼写是FrozenVolue
+                    open_price = row["OpenPrice"]
+                    market_value = row["MarketValue"]
+                    on_road_volume = row.get("OnRoadVolume", 0)
+                    yesterday_volume = row.get("YesterdayVolume", 0)
+                    avg_price = market_value / volume if volume > 0 else 0
+                    
+                    trader_logger.info(f"[快照-持仓明细] 股票={stock_code}, 总持仓={volume}, "
+                                      f"可用持仓={free_volume}, 冻结持仓={frozen_volume}, "
+                                      f"在途持仓={on_road_volume}, 昨日持仓={yesterday_volume}, "
+                                      f"开仓价={open_price:.4f}, 市值={market_value:.2f}, 均价={avg_price:.4f}")
+            else:
+                trader_logger.info(f"[快照-持仓信息] 时间={timestamp}, 无持仓")
+            
+            # 记录交易信息快照
+            if trades_df is not None and not trades_df.empty:
+                trader_logger.info(f"[快照-交易信息] 时间={timestamp}, 交易数量={len(trades_df)}")
+                for _, row in trades_df.iterrows():
+                    stock_code = row["StockCode"]
+                    volume = row["Volume"]
+                    price = row["Price"]
+                    trade_value = row.get("Value", volume * price)  # 优先使用Value字段，如果没有则计算
+                    trade_type = row["TradeType"]
+                    strategy = row.get("Strategy", "")
+                    remark = row.get("Remark", "")
+                    order_id = row.get("OrderId", "")
+                    trade_id = row["TradeId"]
+                    trade_time = row["TradeTime"]
+                    
+                    trader_logger.info(f"[快照-交易明细] 交易ID={trade_id}, 订单ID={order_id}, "
+                                      f"股票={stock_code}, 策略={strategy}, "
+                                      f"类型={trade_type}, 数量={volume}, 价格={price:.4f}, "
+                                      f"交易额={trade_value:.2f}, 交易时间={trade_time}, "
+                                      f"备注={remark}")
+            else:
+                trader_logger.info(f"[快照-交易信息] 时间={timestamp}, 无交易记录")
+                
+            trader_logger.info(f"[快照-完成] 时间={timestamp}")
+            
+        except Exception as e:
+            logger.error(f"保存交易快照失败: {e}", exc_info=True)

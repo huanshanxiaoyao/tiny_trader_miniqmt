@@ -73,7 +73,9 @@ class MiniTrader:
                 "委托数量": order.order_volume,
                 "委托价格": order.price,
                 "订单编号": order.order_id,
-                "委托状态": order.status_msg,
+                "委托策略": order.strategy_name,
+                "委托状态": order.order_status,
+                "状态描述": order.status_msg,
                 "报单时间": datetime.fromtimestamp(order.order_time).strftime('%H:%M:%S')
             }
             for order in orders
@@ -90,6 +92,8 @@ class MiniTrader:
                 "Price": trade.traded_price,
                 "Value": trade.traded_amount,
                 "TradeType":trade.order_type,
+                "Strategy": trade.strategy_name, 
+                "Remark":trade.order_remark,
                 "OrderId": trade.order_id,
                 "TradeId": trade.traded_id,
                 "TradeTime": datetime.fromtimestamp(trade.traded_time).strftime('%H:%M:%S')
