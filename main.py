@@ -117,7 +117,7 @@ def on_tick_data(ticks):
     #所有这里只对实盘实操的时候生效
     if not using_account.is_simulated and (len(reviewed_signals) > 0 or using_account.need_update()):
         #这里逻辑上可以做成异步，无需阻塞，后面加日志看下具体消耗时间，再决定要不要修改
-        using_account.update_positions(trader.get_account_info(), trader.get_positions(), trader.get_trades(), id2stock)
+        using_account.update_positions(trader.get_account_info(), trader.get_positions(), trader.get_trades(), trader.get_orders(), id2stock)
     if not reviewed_signals:
         return
     
@@ -195,7 +195,7 @@ def main(use_sim=False, account_id=ACCOUNT_ID):
             trader.print_summary()
             local_account = LocalAccount(ACCOUNT_ID)
             using_account = local_account
-            using_account.update_positions(trader.get_account_info(), trader.get_positions(), trader.get_trades(), id2stock)
+            using_account.update_positions(trader.get_account_info(), trader.get_positions(), trader.get_trades(), trader.get_orders(), id2stock)
   
         # 订阅行情
         stock_codes = list(id2stock.keys())

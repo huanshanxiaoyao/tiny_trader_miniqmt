@@ -38,7 +38,7 @@ class Strategy1004(BaseStrategy):
         logger.info(f"策略1004初始化，关联股票数量 {len(self.a_codes)}")
 
         self.a_min_increase = 0.02  # A股最小涨幅2%
-        self.bj_max_increase = 0.05  # 北交所最大涨幅3%
+        self.bj_max_increase = 0.05  # 北交所最大涨幅5%
         
         #策略判断阈值，后续考虑放到配置中
         self.undervalued = -1
@@ -65,14 +65,12 @@ class Strategy1004(BaseStrategy):
         
 
         current_time = datetime.datetime.now()
-        #start_time_dt = current_time - datetime.timedelta(minutes=1)
         #说明0931分钟对应的是 093000 --093059的数据，所以这里不再-1，直接用当前分钟数就是取前一个分钟的数据
-        start_time_dt = current_time
         # 格式化为"YYYYMMDDHHMMSS"格式
-        start_minutes = start_time_dt.strftime('%Y%m%d%H%M00')
+        current_minute = current_time.strftime('%Y%m%d%H%M00')
 
-        #获取分钟数据
-        code2data = self.get_minute_data(self.a_codes, start_minutes)
+        #获取最近1分钟数据
+        code2data = self.get_minute_data(self.a_codes, current_minute)
         #获取最新tick数据，为了最新价格和昨日收盘
         code2realtime = DataProvider.get_full_ticks(self.a_codes)
 
@@ -95,7 +93,7 @@ class Strategy1004(BaseStrategy):
                 
             current_price = tick['lastPrice']
             lastClose = tick['lastClose']
-            stock.current_price = current_price    
+            stock.current_price = current_price  
 
             #slope, pct = self.code2tick_seq[bj_code].calculate_price_trend()
             # 计算股票涨幅
@@ -130,11 +128,11 @@ class Strategy1004(BaseStrategy):
                 a_pct = lastPrice/lastClose - 1
                 
                 today_minutes = code2data.get(a_code, {})
-                today_minute_voluem = today_minutes.get('volume', 0)
+                today_minute_volume = today_minutes.get('volume', 0)
                 history_minutes = self.code2minutes_data.get(a_code, {})
-                history_avg_volume = history_minutes.get(start_minutes, 0)
+                history_avg_volume = history_minutes.get(current_minute, 0)
                 # 检查最近一分钟成交量是否是过去5个交易日同一时间成交量的3倍以上
-                volume_multiple = today_minute_voluem / history_avg_volume if history_avg_volume else 0 
+                volume_multiple = today_minute_volume / history_avg_volume if history_avg_volume else 0 
                 volume_surge = volume_multiple >= 3.0
                 
                 # 获取北交所股票当前价格
@@ -153,12 +151,12 @@ class Strategy1004(BaseStrategy):
                 else:
                     continue
 
-                # 如果满足成交量激增条件，且涨幅差大于3%，strong_buy加1
+                # 如果满足成交量激增条件，且涨幅差大于3%，buy_support加1
                 if volume_surge and (a_pct - bj_increase > 0.03) and current_z_score < -0.5:
-                    buy_remark.append(f"股票{a_code}  量价齐涨 分钟点 {start_minutes}今日成交量 {today_minute_voluem}, 历史平均成交量 {history_avg_volume},今日涨幅: {a_pct:.2%}")
+                    buy_remark.append(f"股票{a_code}  量价齐涨 分钟点 {current_minute}今日成交量 {today_minute_volume}, 历史平均成交量 {history_avg_volume},今日涨幅: {a_pct:.2%}")
                     buy_support += 1
 
-                if a_pct < bj_increase - 0.07 and a_pct < 0:
+                if a_pct < bj_increase - 0.07 and a_pct < -0.03:
                     sell_remark.append(f"股票{a_code}  分钟点,大幅下跌，今日涨幅: {a_pct:.2%}")
                     sell_support += 1
                 
@@ -166,7 +164,7 @@ class Strategy1004(BaseStrategy):
                 yesterday_z_score = a_stock.get('z_score')
                 
                 if yesterday_z_score is not None:
-                    logger.info(f"股票{a_code}当前z-score: {current_z_score:.2f}, 昨日z-score: {yesterday_z_score:.2f}, 今日涨幅: {a_pct:.2%},分钟点 {start_minutes}今日成交量 {today_minute_voluem}, 历史平均成交量 {history_avg_volume}")
+                    #logger.info(f"股票{a_code}当前z-score: {current_z_score:.2f}, 昨日z-score: {yesterday_z_score:.2f}, 今日涨幅: {a_pct:.2%},分钟点 {current_minute}今日成交量 {today_minute_volume}, 历史平均成交量 {history_avg_volume}")
                     
                     # z-score相关判断
                     if (current_z_score < self.undervalued and (current_z_score - yesterday_z_score) < -0.2) or (current_z_score < 0 - self.outlier_value):
@@ -185,7 +183,8 @@ class Strategy1004(BaseStrategy):
             
             # 生成交易信号
             if strong_sell > 1:
-                volume = self.single_trade_value // current_price
+                min_volume = max(self.one_hand_count, self.single_trade_value // current_price)
+                volume = min(min_volume, stock.current_position)
                 remark = f"A股强卖信号: strong_sell={strong_sell} :" + " ".join(sell_remark)
                 logger.info(f"触发卖出信号: 股票 {bj_code} 涨幅 {bj_increase:.2%} {remark}")
                 trade_signals.append((stock, 'sell', volume, self.str_remark))
@@ -336,11 +335,11 @@ class Strategy1004(BaseStrategy):
                             
                             ##print(f"指定时间点 {start_minutes} 的数据 - 收盘价: {target_close}, 成交量: {target_volume}")
                         else:
-                            print(f"数据缺失 - 股票 {code} 没有收盘价或成交量数据")
+                            logger.warning(f"数据缺失 - 股票 {code} 没有收盘价或成交量数据")
                         
                     else:
-                        print(f"没有数据 - 股票 {code} 在时间点 {start_minutes} 没有数据")
+                        logger.warning(f"没有数据 - 股票 {code} 在时间点 {start_minutes} 没有数据")
                 else:
-                    print(f"没有数据 - 股票 {code} 没有时间序列数据")
+                    logger.warning(f"没有数据 - 股票 {code} 没有时间序列数据")
         
         return code2data

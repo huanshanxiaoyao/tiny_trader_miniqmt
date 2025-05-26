@@ -69,14 +69,18 @@ class MiniTrader:
         orders = self.trader.query_stock_orders(self.account)
         orders_df = pd.DataFrame([
             {
-                "证券代码": order.stock_code,
-                "委托数量": order.order_volume,
-                "委托价格": order.price,
-                "订单编号": order.order_id,
-                "委托策略": order.strategy_name,
-                "委托状态": order.order_status,
-                "状态描述": order.status_msg,
-                "报单时间": datetime.fromtimestamp(order.order_time).strftime('%H:%M:%S')
+                "StockCode": order.stock_code,
+                "Volume": order.order_volume,
+                "Price": order.price,
+                "OrderID": order.order_id,
+                "Strategy": order.strategy_name,
+                "Status": order.order_status,
+                "StatusMsg": order.status_msg,
+                "Remark":order.order_remark,
+                "OrderType": order.order_type,
+                "TradedVolume": order.traded_volume,
+                "TradedPrice": order.traded_price,
+                "OrderTime": datetime.fromtimestamp(order.order_time).strftime('%H:%M:%S')
             }
             for order in orders
         ])
@@ -112,6 +116,7 @@ class MiniTrader:
                 "FreeVolume": position.can_use_volume,
                 "FrozenVolue": position.frozen_volume,
                 "OpenPrice": position.open_price,
+                "AvgPrice": position.avg_price,
                 "MarketValue": position.market_value,
                 "OnRoadVolume": position.on_road_volume,
                 "YesterdayVolume": position.yesterday_volume

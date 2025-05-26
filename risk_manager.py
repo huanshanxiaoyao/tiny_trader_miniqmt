@@ -63,33 +63,22 @@ class RiskManager:
         :return: bool, 如果当天已经有相同备注的交易则返回True，否则返回False
         """
         # 获取当前日期
-        today = datetime.now().strftime('%Y-%m-%d')
+        today = datetime.now().strftime('%Y%m%d')
         
         # 获取账户的交易记录
-        trades = account.get_trades()
+        orders = account.get_orders()
         
         # 检查是否有当天的相同股票、相同备注的交易记录
-        for trade in trades:
-            # 检查是否是今天的交易
-            trade_time = trade['trade_time']
-            
-            # 处理字符串格式的交易时间 "YYYY-MM-DD HH:MM:SS"
-            if isinstance(trade_time, str):
-                # 只取日期部分进行比较
-                trade_date = trade_time.split(' ')[0] if ' ' in trade_time else trade_time
-            else:
-                # 如果是时间戳格式，转换为日期字符串
-                try:
-                    trade_date = datetime.fromtimestamp(trade_time).strftime('%Y-%m-%d')
-                except (TypeError, ValueError):
-                    logger.warning(f"无法将交易时间转换为日期: {trade_time}")
-                    continue
-            
-            if (trade_date == today and 
-                trade['stock_code'] == stock.code and 
-                trade['trade_type'] == trade_type and 
-                trade.get('remark') == remark):
-                return True
+        for order in orders:
+            # 实盘运行时候，这里获得到交易记录都是今天的
+            #将日期的判断删除，如果是回测，需要注意
+            if (order['stock_code'] == stock.code):
+                logger.info(f" {stock.code} ,{remark}, {trade_type} check {order}")
+                if order.get("strategy", "") == remark  and order.get("status","") in ["done","waiting"] and order.get("order_type","") == trade_type:
+                    logger.warning(f"股票 {stock.code} {remark}今日已委托 ，不允许再次买入")
+                    return True
+                else:
+                    logger.warning(f"股票 {stock.code} 今日已成交 ，但remark不匹配，请检查{remark}, trade_info:{order}")
                 
         return False
     

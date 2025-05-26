@@ -21,6 +21,9 @@ class BaseAccount:
         self.initial_cash = initial_cash
         self.position_ratio = 0
 
+        self.trades = []
+        self.orders = []
+
         self.account_file = os.path.join(self.data_dir, f"{account_id}.json")
         self.positions_file = os.path.join(self.data_dir, f"{account_id}_positions.json")
         self.trades_file = os.path.join(self.data_dir, f"{account_id}_trades.json")
@@ -240,6 +243,11 @@ class BaseAccount:
     def get_trades(self):
         """获取交易记录"""
         return self.trades
+
+            
+    def get_orders(self):
+        """获取交易记录"""
+        return self.orders
     
     def get_trades_df(self):
         """获取交易记录DataFrame"""

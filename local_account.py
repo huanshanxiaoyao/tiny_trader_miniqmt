@@ -18,6 +18,7 @@ class LocalAccount(BaseAccount):
         self.created_at = 0
         self.positions = {}
         self.trades = []
+        self.orders = []
 
         self.submit_trade_count = 0
 
@@ -38,7 +39,7 @@ class LocalAccount(BaseAccount):
         return  (current_time - self.last_update_time) > self.update_interval
 
     
-    def update_positions(self, acc_info, positions_df, trades_df, id2stock):
+    def update_positions(self, acc_info, positions_df, trades_df, orders_df, id2stock):
         """
         根据服务器端返回的账户信息和持仓信息更新账户状态
         :param acc_info: 账户信息字典，包含总资产、市值、可用资金、冻结资金等信息
@@ -83,6 +84,7 @@ class LocalAccount(BaseAccount):
                     free_volume = row["FreeVolume"]
                     open_price = row["OpenPrice"]
                     market_value = row["MarketValue"]
+                    avg_price = row["AvgPrice"]
                     
                     # 更新self.positions字典
                     self.positions[stock_code] = {
@@ -90,7 +92,7 @@ class LocalAccount(BaseAccount):
                         'volume': volume,
                         'can_use_volume': free_volume,
                         'cost': market_value if volume > 0 else 0,
-                        'avg_price': market_value / volume if volume > 0 else 0,
+                        'avg_price': avg_price,
                         'market_value': market_value,
                         'profit': 0,  # 这个可能需要后续计算
                         'profit_ratio': 0,  # 这个可能需要后续计算
@@ -106,10 +108,11 @@ class LocalAccount(BaseAccount):
                         stock.free_position = free_volume
                         #stock.frozen_position = row["FrozenVolue"]
                         stock.open_price = open_price
-                        #stock.market_value = row["MarketValue"]
+                        stock.cost_price = avg_price
+                        stock.market_value = market_value
                         #stock.on_road_position = row["OnRoadVolume"]
                         #stock.yesterday_position = row["YesterdayVolume"]
-                        stock.cost_price = market_value / volume if volume > 0 else 0
+                        #stock.cost_price = market_value / volume if volume > 0 else 0
                         logger.info(f"更新股票 {stock_code} 持仓信息: 总持仓={stock.current_position}, 可用持仓={stock.free_position}, 成本价={stock.cost_price:.2f}, 开仓价={stock.open_price:.2f}")
                 
                 # 对于持仓表中没有的股票，将持仓设为0
@@ -138,11 +141,21 @@ class LocalAccount(BaseAccount):
                     stock_code = row["StockCode"]
                     trade_id = row["TradeId"]
                     trade_type = row["TradeType"]
+                    if trade_type == 23:
+                        trade_type = 'buy'
+                    elif trade_type == 24:
+                        trade_type = 'sell'
+                    else:
+                        logger.warning(f"未知的交易类型 {trade_type}，")
+                        trade_type = str(trade_type)
+
                     volume = row["Volume"]
                     price = row["Price"]
                     trade_time = row["TradeTime"]
                     trade_value = volume * price
                     commission = 0
+                    strategy = row.get("Strategy", "")
+                    remark = row.get("Remark", "")
                     
                     # 创建交易记录字典
                     trade_record = {
@@ -153,7 +166,8 @@ class LocalAccount(BaseAccount):
                         'price': price,
                         'trade_value': trade_value,
                         'commission': commission,
-                        'remark': row.get("Remark", ""),
+                        'strategy': strategy,
+                        'remark': remark,
                         'trade_time': trade_time
                     }
                     
@@ -167,12 +181,60 @@ class LocalAccount(BaseAccount):
             logger.error(f"更新交易信息失败: {e}", exc_info=True)
 
         self.submit_trade_count = len(self.trades)
+
+        #更新委托信息
+        try:
+            if orders_df is not None and not orders_df.empty:
+                # 清空当前委托记录，重新从服务器数据填充
+                self.orders = []
+                
+                for _, order in orders_df.iterrows():
+                    # 创建委托记录字典
+                    status = order["Status"]
+                    if status == 56:
+                        status = "done"
+                    elif status == 50:
+                        status = "waiting"
+                    
+                    order_type = order["OrderType"]
+                    if order_type == 23:
+                        order_type = 'buy'
+                    elif order_type == 24:
+                        order_type = 'sell'
+                    else:
+                        logger.warning(f"未知的委托类型 {order_type}，")
+                        order_type = str(order_type)
+
+                    order_record = {
+                        'stock_code': order["StockCode"],
+                        'volume': order["Volume"],
+                        'price': order["Price"],
+                        'order_id': order["OrderID"],
+                        'strategy': order["Strategy"],
+                        'status': status ,
+                        'status_msg': order["StatusMsg"],
+                        'remark': order["Remark"],
+                        'order_type': order_type,
+                        'traded_volume': order["TradedVolume"],
+                        'traded_price': order["TradedPrice"],
+                        'order_time': order["OrderTime"]
+                    }
+                    
+                    # 添加到委托记录列表
+                    self.orders.append(order_record)
+                    
+                logger.info(f"更新委托记录成功，共 {len(self.orders)} 条记录")
+            else:
+                logger.warning("委托数据为空，无法更新委托信息")
+        except Exception as e:
+            logger.error(f"更新委托信息失败: {e}", exc_info=True)
+        
         self.last_update_time = int(datetime.now().timestamp())
 
         # 保存快照
-        self._save_snapshot(acc_info, positions_df, trades_df)
+        self._save_snapshot(acc_info, positions_df, trades_df, orders_df)
 
-    def _save_snapshot(self, acc_info, positions_df, trades_df):
+    def _save_snapshot(self, acc_info, positions_df, trades_df, orders_df):
         """
         保存账户、持仓和交易的快照到trader_logger
         :param acc_info: 账户信息字典
@@ -199,7 +261,7 @@ class LocalAccount(BaseAccount):
                     market_value = row["MarketValue"]
                     on_road_volume = row.get("OnRoadVolume", 0)
                     yesterday_volume = row.get("YesterdayVolume", 0)
-                    avg_price = market_value / volume if volume > 0 else 0
+                    avg_price = row["AvgPrice"]
                     
                     trader_logger.info(f"[快照-持仓明细] 股票={stock_code}, 总持仓={volume}, "
                                       f"可用持仓={free_volume}, 冻结持仓={frozen_volume}, "
@@ -230,6 +292,30 @@ class LocalAccount(BaseAccount):
                                       f"备注={remark}")
             else:
                 trader_logger.info(f"[快照-交易信息] 时间={timestamp}, 无交易记录")
+
+            # 记录委托信息快照
+            if orders_df is not None and not orders_df.empty:
+                trader_logger.info(f"[快照-委托信息] 时间={timestamp}, 委托数量={len(orders_df)}")
+                for _, row in orders_df.iterrows():
+                    stock_code = row["StockCode"]
+                    volume = row["Volume"]
+                    price = row["Price"]
+                    order_id = row["OrderID"]
+                    strategy = row.get("Strategy", "")
+                    status = row["Status"]
+                    status_msg = row.get("StatusMsg", "") # 根据实际情况确认字段名
+                    order_type = row.get("OrderType", "") # 根据实际情况确认字段名
+                    traded_volume = row.get("TradedVolume", 0)
+                    traded_price = row.get("TradedPrice", 0.0)
+                    order_time = row["OrderTime"]
+                    remark = row.get("Remark", "")
+
+                    trader_logger.info(f"[快照-委托明细] 订单ID={order_id}, 股票={stock_code}, 策略={strategy}, "
+                                      f"状态={status}, 状态消息='{status_msg}', 类型={order_type}, "
+                                      f"委托量={volume}, 委托价={price:.4f}, 成交量={traded_volume}, "
+                                      f"成交均价={traded_price:.4f}, 委托时间={order_time}, 备注='{remark}'")
+            else:
+                trader_logger.info(f"[快照-委托信息] 时间={timestamp}, 无委托记录")
                 
             trader_logger.info(f"[快照-完成] 时间={timestamp}")
             
