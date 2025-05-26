@@ -167,7 +167,7 @@ class Strategy1004(BaseStrategy):
                     #logger.info(f"股票{a_code}当前z-score: {current_z_score:.2f}, 昨日z-score: {yesterday_z_score:.2f}, 今日涨幅: {a_pct:.2%},分钟点 {current_minute}今日成交量 {today_minute_volume}, 历史平均成交量 {history_avg_volume}")
                     
                     # z-score相关判断
-                    if (current_z_score < self.undervalued and (current_z_score - yesterday_z_score) < -0.2) or (current_z_score < 0 - self.outlier_value):
+                    if (current_z_score < self.undervalued and (current_z_score - yesterday_z_score) < -0.3) or (current_z_score < 0 - self.outlier_value):
                         buy_remark.append(f"股票{a_code} 开始低估 当前z-score: {current_z_score:.2f}, 昨日z-score: {yesterday_z_score:.2f}")
                         buy_support += 1
                     
