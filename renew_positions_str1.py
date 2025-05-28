@@ -15,8 +15,8 @@ class MyStock:
         self.today_buy_value = 0
         self.today_sell_value = 0 
         self.related_industry_codes = related_industry_codes or []  # 相关行业代码
-        self.buy_threshold = 0.95             # 下跌买入阈值（默认0.95）
-        self.sell_threshold = 1.05            # 上涨卖出阈值（默认1.05)
+        self.buy_threshold = 0.97             # 下跌买入阈值（默认0.95）
+        self.sell_threshold = 1.03            # 上涨卖出阈值（默认1.05)
         self.buy_threshold_2 = 0.92           # 下跌买入阈值2（默认0.92）
         self.sell_threshold_2 = 1.08          # 上涨卖出阈值2（默认1.08)
         self.current_position = 0             # 当前持仓数量
@@ -265,7 +265,8 @@ def handlebar(C):
         avg_price = C.code2avg.get(code, 0)
 
         pct = current_price / lastClose if lastClose else 1
-
+        
+        print(f"today total_buy={C.total_buy:.2f}, total_sell={C.total_sell:.2f}, stock_buy,{stock.today_buy_value},stock_sell,{stock.today_sell_value}")
         print(f"{code} 价格={current_price:.2f}, 均价={avg_price:.2f}, lastClose={lastClose:.2f}, pct={pct} bj50涨幅={market_rise_percent:.2f}%")
         
         # 买入条件：大盘学好，行业没有严重下跌，股票价格低于成本或均值，持仓未满
@@ -283,7 +284,7 @@ def handlebar(C):
                 continue
             if C.total_buy > 800000:
                 print(f"总买入金额={C.total_buy:.2f} 即将超过100万限额")
-            if C.total_buy - C.total_sell > 100000:#每日手动更新，因为目前和人工下单混在一起
+            if C.total_buy - C.total_sell > 50000:#每日手动更新，因为目前和人工下单混在一起
                 print(f"总买入金额={C.total_buy:.2f} 超过额度，跳过买入")
                 continue
 

@@ -104,8 +104,7 @@ class Strategy1001(BaseStrategy):
         """
         # 判断买入条件
         if self._should_buy(stock, current_price, market_rise, safe_range):
-            volume = self.single_trade_value // current_price
-            volume = max(volume, self.one_hand_count)
+            volume = self.get_buy_volume(stock, current_price)
             return (stock, 'buy', volume,  self.str_remark)
             
         # 判断卖出条件
@@ -173,25 +172,30 @@ class Strategy1001(BaseStrategy):
             return True
         if  current_price > long_ema55 + long_atr20 * 3:
             logger.info(f"触发卖出信号 当前价格高于长周期EMA55 + 3倍ATR20，卖出，code:{stock.code}, current_price:{current_price}, long_ema55:{long_ema55}, long_atr20:{long_atr20}")
-            return True 
-
-        if stock.cost_price <= 0:
-            logger.info(f"成本价为0，跳过，code:{stock.code}, cost_price:{stock.cost_price}")
+            return True
+        
+        """cost_price 为服务端返回的avg_price，可能为0甚至负数"""
+        if stock.open_price <= 0:
+            logger.info(f"开仓价为0，跳过，code:{stock.code}, cost_price:{stock.cost_price}, open_price:{stock.open_price}")
             return False
+
 
         current_value = stock.current_position * current_price
         # 普通卖出条件
-        if (current_value > self.soft_min_position_value and  
-            (current_price > ( short_ema8 + self.sell_step1 * short_atr10 ) or current_price > stock.cost_price * self.sell_increase_rate) ):
-            logger.info(f"触发卖出信号，  step1 {stock.code}, current_price:{current_price}, cost_price:{stock.cost_price},short_ema8 :{short_ema8} , short_atr10:{short_atr10}:")
+        if (current_value > self.soft_min_position_value and current_price > ( short_ema8 + self.sell_step1 * short_atr10 ) ):
+            logger.info(f"触发卖出信号，  step1 {stock.code}, current_price:{current_price}, cost_price:{stock.cost_price},open_price:{stock.open_price},short_ema8 :{short_ema8} , short_atr10:{short_atr10}:")
             return True
             
         # 接近最小仓位的卖出条件
         if current_value <= self.soft_min_position_value and current_value > self.min_position_value:
-            if current_price > ( short_ema8 + self.sell_step2 * short_atr10) or current_price > stock.cost_price * self.sell_increase_rate:
-                logger.info(f"触发卖出信号， step2 {stock.code}, current_price:{current_price},cost_price:{stock.cost_price}, short_ema8 :{short_ema8} , short_atr10:{short_atr10}:")
+            if current_price > ( short_ema8 + self.sell_step2 * short_atr10):
+                logger.info(f"触发卖出信号， step2 {stock.code}, current_price:{current_price},cost_price:{stock.cost_price},open_price:{stock.open_price}, short_ema8 :{short_ema8} , short_atr10:{short_atr10}:")
                 return True
-            
+
+        #因为cost_price 为服务端返回的avg_price，可能为0甚至负数，所以这里依赖open_price，但可能有问题，后续想想怎么弄
+        if current_value > self.min_position_value and current_price > stock.open_price * self.sell_increase_rate:
+            logger.info(f"触发卖出信号， step3 {stock.code}, current_price:{current_price},cost_price:{stock.cost_price},open_price:{stock.open_price}, short_ema8 :{short_ema8}, short_atr10:{short_atr10}:")
+            return True  
         return False
 
     def fill_data(self):

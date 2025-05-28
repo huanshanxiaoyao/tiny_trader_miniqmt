@@ -10,6 +10,15 @@ class BaseStrategy(ABC):
         self.target_stocks = []                   
         self.data_ready = False                        # 数据准备状态标志
         self.one_hand_count = 100
+        self.single_trade_value = 8000 
+    
+    def get_buy_volume(self, stock, current_price):
+        """逻辑上后面也可以做细化策略，"""
+        volume = max(self.one_hand_count, self.single_trade_value // current_price)
+        if stock.code[-2:] != 'BJ':
+            volume = volume//100 * 100
+        return volume
+
         
     @abstractmethod
     def fill_data(self, data_provider, start_time=None, end_time=None):
@@ -39,6 +48,7 @@ class BaseStrategy(ABC):
         market_rise = (market_tick['lastPrice'] / market_tick['open'] - 1) * 100
         
         return market_rise
+
     def need_update(self):
         ###LocalAccount需要主动去查询是否更新，
         ###SimAccount 在模拟交易的时候直接调用了更新
