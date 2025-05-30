@@ -182,7 +182,7 @@ class Strategy1004(BaseStrategy):
 
             
             # 生成交易信号
-            if strong_sell > 1:
+            if strong_sell > 1 and stock.current_position > 0:
                 min_volume = max(self.one_hand_count, self.single_trade_value // current_price)
                 volume = min(min_volume, stock.current_position)
                 remark = f"A股强卖信号: strong_sell={strong_sell} :" + " ".join(sell_remark)
