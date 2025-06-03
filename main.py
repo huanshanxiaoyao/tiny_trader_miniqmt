@@ -128,7 +128,7 @@ def on_tick_data(ticks):
         else:
             ret = trader.sell_stock(stock.code, amount, remark=f'{remark}')
         
-        logger.info(f"执行交易: {trade_type} {stock.code} {amount}, ret: {ret}")
+        logger.info(f"提交交易: {trade_type} {stock.code} {amount}, ret: {ret}")
 
     
 

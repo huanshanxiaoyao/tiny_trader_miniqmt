@@ -19,6 +19,33 @@ class BaseStrategy(ABC):
             volume = volume//100 * 100
         return volume
 
+    def get_sell_volume(self, stock, current_price, current_position, min_position):
+        # 参数验证
+        if current_price <= 0:
+            return 0
+        
+        if current_position <= min_position:
+            return 0  # 已达到最小持仓，不能再卖
+        
+        # 计算可卖数量
+        ask_volume = self.single_trade_value // current_price
+        max_sellable = current_position - min_position
+        ask_volume = min(ask_volume, max_sellable)
+
+        
+        # 根据交易所规则处理
+        if stock.code[-2:] != 'BJ':  # 非北交所股票需要整手处理
+            if current_position > self.one_hand_count:  # 已达到一手数量，需要整手处理
+                if ask_volume > self.one_hand_count:
+                    volume = (ask_volume // 100) * 100
+                else:
+                    volume = self.one_hand_count
+            else:
+                volume = ask_volume 
+        else:  # 北交所股票可以单股交易
+            volume = ask_volume
+        
+        return volume
         
     @abstractmethod
     def fill_data(self, data_provider, start_time=None, end_time=None):

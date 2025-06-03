@@ -67,7 +67,7 @@ class LocalAccount(BaseAccount):
                 self.position_ratio = 0
                 
             logger.info(f"更新账户信息: 总资产={self.total_asset:.2f}, 市值={self.market_value:.2f}, "
-                        f"可用资金={self.free_cash:.2f}, 仓位比例={self.position_ratio:.2%}")
+                        f"可用资金={self.free_cash:.2f}, 冻结资金={self.frozen_cash:.2f}，仓位比例={self.position_ratio:.2%}")
                 
         except Exception as e:
             logger.error(f"更新账户信息失败: {e}", exc_info=True)

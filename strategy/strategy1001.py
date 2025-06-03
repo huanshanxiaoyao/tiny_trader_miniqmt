@@ -109,8 +109,10 @@ class Strategy1001(BaseStrategy):
             
         # 判断卖出条件
         elif stock.current_position > 0 and self._should_sell(stock, current_price, market_rise, safe_range):
-            min_volume = max(self.one_hand_count, self.single_trade_value // current_price)
-            volume = min(min_volume, stock.current_position - self.min_position_value // current_price)
+            min_position = 0
+            if self.min_position_value  > 0:
+                min_position = self.min_position_value // current_price     
+            volume = self.get_sell_volume(stock, current_price, stock.current_position,  min_position)
             if volume > 0:
                 return (stock, 'sell', volume,  self.str_remark)
         

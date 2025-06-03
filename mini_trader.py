@@ -158,9 +158,6 @@ class MiniTrader:
         :param remark: 委托备注
         :return: 异步委托序号
         """
-        # 获取账户可用资金
-        asset = self.trader.query_stock_asset(self.account)
-        available_cash = asset.cash
 
         # 获取当前价格 #TODO
         if price_type == xtconstant.LATEST_PRICE:
@@ -169,15 +166,13 @@ class MiniTrader:
         else:
             current_price = price
 
-                # 确定买入金额
-        buy_amount = min(amount, available_cash/current_price)
-        buy_volume = buy_amount
+        buy_volume = amount
 
         if buy_volume <= 0:
             logger.warning(f"可买数量为0，可用资金：{available_cash}，目标金额：{amount}")
             return None
 
-        logger.info(f"买入 {stock_code}: 金额{amount}, 价格类型{price_type}, 价格{price},  备注{remark}, 可用资金{available_cash}")
+        logger.info(f"买入 {stock_code}: 数量{amount}, 价格类型{price_type}, 价格{price},  备注{remark}")
         return self.trader.order_stock_async(
             self.account,
             stock_code,
@@ -200,18 +195,19 @@ class MiniTrader:
         :return: 异步委托序号
         """
         # 获取持仓信息
-        positions = self.trader.query_stock_positions(self.account)
-        position_available = {p.stock_code: p.can_use_volume for p in positions}
+        #positions = self.trader.query_stock_positions(self.account)
+        #position_available = {p.stock_code: p.can_use_volume for p in positions}
 
         # 确定可卖数量
-        available_volume = position_available.get(stock_code, 0)
-        sell_volume = min(volume, available_volume)
+       # available_volume = position_available.get(stock_code, 0)
+        #sell_volume = min(volume, available_volume)
+        sell_volume = volume
 
         if sell_volume <= 0:
             logger.warning(f"可卖数量为0，持仓可用：{available_volume}，目标数量：{volume}")
             return None
 
-        logger.info(f"卖出 {stock_code}: 数量{sell_volume}股")
+        logger.info(f"卖出 {stock_code}: 数量{sell_volume}股 价格类型{price_type}, 价格{price},  备注{remark}")
         return self.trader.order_stock_async(
             self.account,
             stock_code,
