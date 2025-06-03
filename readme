@@ -1,0 +1,3 @@
+#目前需要建立两个连接
+ln ../stock_common_utils/stock_code_config.py  .
+ln ../stock_common_utils/indicators.py  .

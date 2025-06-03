@@ -15,14 +15,14 @@ class MyStock:
         self.today_buy_value = 0
         self.today_sell_value = 0 
         self.related_industry_codes = related_industry_codes or []  # 相关行业代码
-        self.buy_threshold = 0.97             # 下跌买入阈值（默认0.95）
+        self.buy_threshold = 0.95             # 下跌买入阈值（默认0.95）
         self.sell_threshold = 1.03            # 上涨卖出阈值（默认1.05)
         self.buy_threshold_2 = 0.92           # 下跌买入阈值2（默认0.92）
         self.sell_threshold_2 = 1.05          # 上涨卖出阈值2（默认1.08)
         self.current_position = 0             # 当前持仓数量
         self.cost_price = 0                   # 成本价
         self.max_position_value = 100000              # 最大持仓金额（默认1000）
-        self.min_position_value = 0               # 最小持仓数量（默认100）
+        self.min_position_value = 0               # 最小持仓（默认100）
         self.soft_max_position_value = 80000          # 软上限持仓金额（默认800）
         self.soft_min_position_value = 50000          # 软下限持仓金额（默认400）
         self.single_buy_value = 20000          # 单次买入金额，默认1000
@@ -43,12 +43,6 @@ def init_mystock(C, code_list):
         dict: 股票代码到MyStock对象的映射
     """
     code2mystock = {}
-    code2related_industry = {"832522.BJ":["300450.SZ","300457.SZ","300340.SZ"],
-        "832491.BJ":["600406.SH","000400.SZ","002028.SZ","870299.BJ"],
-        "835174.BJ":["600031.SH","000425.SZ","836942.BJ"],
-        "836942.BJ":["832885.BJ","835640.BJ","835174.BJ"],
-        "920116.BJ":["688066.SH","835640.BJ","832885.BJ"],
-        "839493.BJ":["603019.SH","872808.BJ","688316.SH"]}
     
     # 获取当前持仓的股票代码数量和成本价
     positions = get_trade_detail_data(C.accID, 'stock', 'position')
@@ -57,7 +51,6 @@ def init_mystock(C, code_list):
         stock = MyStock(code)
         ret = C.get_instrumentdetail(code)
         name = ret["InstrumentName"]
-        stock.related_industry_codes = code2related_industry.get(code, [])
         stock.name = name
         
         # 设置当前持仓数量和成本价（如果有持仓）
@@ -66,7 +59,7 @@ def init_mystock(C, code_list):
             if ret_code == code:
                 stock.current_position = position.m_nVolume 
                 stock.cost_price = position.m_dOpenPrice
-                print(f"股票{name}初始化信息: 当前持仓={stock.current_position}, 成本价={stock.cost_price:.2f}, 最大持仓={stock.max_position}, 最小持仓={stock.min_position}")
+                print(f"股票{name}初始化信息: 当前持仓={stock.current_position}, 开盘价={stock.cost_price:.2f}, ,最大持仓价值={stock.max_position_value}, 最小持仓价值={stock.min_position_value}")
                 break
         
         code2mystock[code] = stock
@@ -109,11 +102,9 @@ def refresh_position(C, code2mystock):
             if ret_code == code:
                 stock.current_position = position.m_nVolume 
                 stock.cost_price = position.m_dOpenPrice
-                print(f"{stock.name}: 当前持仓={stock.current_position}, 成本价={stock.cost_price:.2f}, 最大持仓={stock.max_position}, 最小持仓={stock.min_position}")
+                print(f"{stock.name}: 当前持仓={stock.current_position}, 开盘价={stock.cost_price:.2f}, 最大持仓价值={stock.max_position_value}, 最小持仓价值={stock.min_position_value}")
     
     
-
-
 def init(C):
     """
     策略初始化函数
@@ -137,9 +128,6 @@ def init(C):
     
     # 定义相关股票列表：目标代码 + BJ50指数 + 相关行业代码
     C.related_stocks = C.target_codes.copy() + ['899050.BJ']  # 修正：使用 C.target_codes
-    # 添加所有股票的相关行业代码
-    for stock in C.code2mystock.values():
-        C.related_stocks.extend(stock.related_industry_codes)
     C.related_stocks = list(set(C.related_stocks))
     
     # 设置时间范围：end_time为昨天，start_time为10个交易日前
@@ -183,38 +171,8 @@ def init(C):
     
     print("历史均价数据：", C.code2avg)
 
+    refresh_position(C, C.code2mystock)
 
-def calculate_industry_status(ticks, related_industry_codes):
-    """
-    计算行业相关股票的涨跌状态
-    """
-    industry_bad = False
-    industry_rise_percent = 0
-    industry_count = 0
-    
-    for code in related_industry_codes:
-        tick = ticks.get(code)
-        if not tick:
-            continue
-        # 修正：使用统一的键名
-        last_price = tick.get('lastPrice') or tick.get('last_price', 0)
-        open_price = tick.get('open') or tick.get('open_price', 0)
-        
-        if not open_price:  # 防止除以零
-            continue
-            
-        rise_percent = (last_price / open_price - 1) * 100
-        industry_rise_percent += rise_percent
-        industry_count += 1
-        
-        if rise_percent < -5:
-            industry_bad = True
-            break
-            
-    if industry_count > 0:
-        industry_rise_percent /= industry_count
-        
-    return industry_bad, industry_rise_percent
 
 def handlebar(C):
     """
@@ -228,7 +186,7 @@ def handlebar(C):
 
 
     now = int(datetime.now().timestamp())
-    if C.need_refresh_position > 0 or now % 60 == 0:
+    if C.need_refresh_position > 0 or now % 5 == 0:
         print(f"today total_buy={C.total_buy:.2f}, total_sell={C.total_sell:.2f}")
         refresh_position(C, C.code2mystock)
         if C.need_refresh_position > 0:
@@ -240,39 +198,38 @@ def handlebar(C):
         print("Failed to get BJ50 tick")
         return
     
-    # 判断大盘是否学好（当前价格大于开盘价）
+    # 判断大盘涨幅
     if bj50_tick['lastClose'] > 0:
         market_rise_percent = (bj50_tick['lastPrice'] / bj50_tick['lastClose'] - 1) * 100
     else:
         print("警告：BJ50开盘价为0")
         return
     market_good = market_rise_percent > -3 #TODO
-    
+
+    print(f"today total_buy={C.total_buy:.2f}, total_sell={C.total_sell:.2f},")
     # 对每一个目标代码进行交易决策
     for code, stock in C.code2mystock.items():
         tick = ticks.get(code)
         if not tick:
             continue
         
-        # 为当前股票计算行业状态，使用其相关行业代码
-        #industry_bad, industry_rise_percent = calculate_industry_status(ticks, stock.related_industry_codes)
-        
         current_price = tick['lastPrice']
+        if current_price <= 0:
+            print(f"警告：{code} 的价格小于0，无法进行交易决策")
+            continue
         lastClose = tick['lastClose']
         
-        # 计算相对于10日均值的比例
+        # 计算相对于7日均值的比例
         avg_price = C.code2avg.get(code, 0)
         if avg_price == 0:
             print(f"警告：{code} 的均价为0，无法计算比例")
             continue
 
+        #注意这里没有-1
         pct = current_price / avg_price if avg_price else 1
         
-        print(f"today total_buy={C.total_buy:.2f}, total_sell={C.total_sell:.2f}, stock_buy,{stock.today_buy_value},stock_sell,{stock.today_sell_value}")
-        print(f"{code} 价格={current_price:.2f}, 均价={avg_price:.2f}, lastClose={lastClose:.2f}, pct={pct} bj50涨幅={market_rise_percent:.2f}%")
+        print(f"{code} 价格={current_price:.2f}, 7日均价={avg_price:.2f}, lastClose={lastClose:.2f}, pct={pct} bj50涨幅={market_rise_percent:.2f}%, stock_buy,{stock.today_buy_value},stock_sell,{stock.today_sell_value}")
         
-        # 买入条件：大盘学好，行业没有严重下跌，股票价格低于成本或均值，持仓未满
-        # 买入条件：根据持仓量使用不同的买入阈值
         if market_good and not C.only_sell_mode:
             if ((stock.current_position == 0 and current_price < avg_price * 0.5) or
                 (stock.current_position > 0 and stock.current_position * current_price < stock.max_position_value and current_price < avg_price * stock.buy_threshold)):
@@ -281,19 +238,19 @@ def handlebar(C):
                     print(f"总买入金额={C.total_buy:.2f}  总卖出金额{C.total_sell:.2f}超过额度，跳过买入")
                     continue
 
-            # 计算买入数量
-            buy_amount = stock.single_buy_value // current_price
-            
-            # 检查交易时间间隔
-            current_time = int(datetime.now().timestamp())
-            if stock.last_buy_time and current_time - stock.last_buy_time < stock.interval:
-                print(f"{stock.name}距离上次买入时间不足{stock.interval}秒，不进行买入")
-                continue
-            print(f"{stock.name}test buy in ")   
-            # 提交买入指令,注意这里只是提交购买请求，并不一定成交，所以设定需要刷新的标记，下一轮会刷新持仓信息
-            submit_buy_order(C, stock, buy_amount, current_price, "str1001")
-            stock.last_buy_time = current_time
-            C.need_refresh_position = 3
+                # 计算买入数量
+                buy_amount = stock.single_buy_value // current_price
+                
+                # 检查交易时间间隔
+                current_time = int(datetime.now().timestamp())
+                if stock.last_buy_time and current_time - stock.last_buy_time < stock.interval:
+                    print(f"{stock.name}距离上次买入时间不足{stock.interval}秒，不进行买入")
+                    continue
+                print(f"{stock.name}test buy in ")   
+                # 提交买入指令,注意这里只是提交购买请求，并不一定成交，所以设定需要刷新的标记，下一轮会刷新持仓信息
+                submit_buy_order(C, stock, buy_amount, current_price, "str1001")
+                stock.last_buy_time = current_time
+                C.need_refresh_position = 3
             
         # 卖出条件：大盘涨幅小，行业涨幅小，股票价格高于成本或均值，持仓充足
         # 卖出条件：根据持仓量使用不同的卖出阈值
@@ -303,14 +260,10 @@ def handlebar(C):
                (stock.current_position * current_price <= stock.soft_min_position_value and 
                 stock.current_position * current_price > stock.min_position_value and 
                 current_price > avg_price * stock.sell_threshold_2)) ):
-
-            if C.total_sell > 500000:
-                print(f"总卖出金额={C.total_sell:.2f} 超过额度，跳过卖出")
-                continue
             
             # 计算卖出数量
-            sell_amount = stock.single_buy_amount//current_price
-            sell_amount = min(sell_amount, stock.current_position - stock.min_position)
+            sell_amount = stock.single_buy_value //current_price  
+            sell_amount = min(sell_amount, stock.current_position - stock.min_position_value//current_price)
             if sell_amount > 0:
                 # 检查卖出时间间隔
                 current_time = int(datetime.now().timestamp())
