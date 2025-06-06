@@ -228,7 +228,7 @@ def handlebar(C):
         #注意这里没有-1
         pct = current_price / avg_price if avg_price else 1
         
-        print(f"{code} 价格={current_price:.2f}, 7日均价={avg_price:.2f}, lastClose={lastClose:.2f}, pct={pct} bj50涨幅={market_rise_percent:.2f}%, stock_buy,{stock.today_buy_value},stock_sell,{stock.today_sell_value}")
+        print(f"{code} 价格={current_price:.2f},{stock.current_position} 7日均价={avg_price:.2f}, lastClose={lastClose:.2f}, pct={pct} bj50涨幅={market_rise_percent:.2f}%, stock_buy,{stock.today_buy_value},stock_sell,{stock.today_sell_value}")
         
         if market_good and not C.only_sell_mode:
             if ((stock.current_position == 0 and current_price < avg_price * 0.5) or
@@ -252,9 +252,8 @@ def handlebar(C):
                 stock.last_buy_time = current_time
                 C.need_refresh_position = 3
             
-        # 卖出条件：大盘涨幅小，行业涨幅小，股票价格高于成本或均值，持仓充足
-        # 卖出条件：根据持仓量使用不同的卖出阈值
-        elif (market_rise_percent < 3  and not C.only_buy_mode and
+        #注意，因为修改了上面判断买入的逻辑，将多个条件拆开了，所以不能在使用elif了
+        if (market_rise_percent < 3  and not C.only_buy_mode and
               ((stock.current_position * current_price > stock.soft_min_position_value and 
                 current_price > avg_price * stock.sell_threshold) or
                (stock.current_position * current_price <= stock.soft_min_position_value and 

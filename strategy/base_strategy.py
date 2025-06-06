@@ -34,17 +34,13 @@ class BaseStrategy(ABC):
 
         
         # 根据交易所规则处理
-        if stock.code[-2:] != 'BJ':  # 非北交所股票需要整手处理
-            if current_position > self.one_hand_count:  # 已达到一手数量，需要整手处理
-                if ask_volume > self.one_hand_count:
-                    volume = (ask_volume // 100) * 100
-                else:
-                    volume = self.one_hand_count
+        if current_position >= self.one_hand_count:  # 已达到一手数量，需要整手处理
+            if ask_volume > self.one_hand_count:
+                volume = (ask_volume // 100) * 100
             else:
-                volume = ask_volume 
-        else:  # 北交所股票可以单股交易
-            volume = ask_volume
-        
+                volume = self.one_hand_count
+        else:
+            volume = ask_volume 
         return volume
         
     @abstractmethod

@@ -31,9 +31,9 @@ class RiskManager:
         free_cash = account.get_free_cash()
         frozen_cash = total_asset - market_value - free_cash
         frozen_cash2 = account.get_frozen_cash()
-        logger.info(f"当前总资产: {total_asset:.2f}, 市值: {market_value:.2f}, 仓位比例: {position_ratio:.2%},最大允许市值: {max_allowed_market_value:.2f}, 额外允许投入: {additional_allowed_value:.2f}, frozen_cash:{frozen_cash}, frozen_cash2:{frozen_cash2}, 可用资金: {free_cash:.2f}")
-        # 计算当前仓位比例
         position_ratio = account.get_position_ratio()
+        logger.info(f"当前总资产: {total_asset:.2f}, 市值: {market_value:.2f}, 仓位比例: {position_ratio:.2%}, frozen_cash:{frozen_cash}, frozen_cash2:{frozen_cash2}, 可用资金: {free_cash:.2f}")
+ 
         
         # 判断是否超过最大仓位比例
         if position_ratio > self.max_position_ratio:
@@ -47,7 +47,8 @@ class RiskManager:
         # 取可用资金和允许额外投入资金的较小值
         available_cash = min(free_cash, additional_allowed_value)
         
-        
+        logger.info(f"最大允许市值: {max_allowed_market_value:.2f}, 额外允许投入: {available_cash:.2f}")
+ 
         return available_cash
 
     def check_today_deal(self, account, stock, remark, trade_type):
