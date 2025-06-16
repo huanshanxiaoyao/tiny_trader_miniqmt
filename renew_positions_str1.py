@@ -143,7 +143,7 @@ def init(C):
 
     # 获取历史数据
     data1 = C.get_market_data_ex(['close'], C.related_stocks, period='1d', 
-                                start_time=C.start_time, end_time=C.end_time)
+                                start_time=C.start_time, end_time=C.end_time, dividend_type="front_ratio")
     print("BEGIN Get Data")
     
     # 检查是否成功获取数据
@@ -234,7 +234,7 @@ def handlebar(C):
             if ((stock.current_position == 0 and current_price < avg_price * 0.5) or
                 (stock.current_position > 0 and stock.current_position * current_price < stock.max_position_value and current_price < avg_price * stock.buy_threshold)):
 
-                if C.total_buy - C.total_sell > 100000:#每日手动更新，因为目前和人工下单混在一起
+                if C.total_buy - C.total_sell > 500000:#每日手动更新，因为目前和人工下单混在一起
                     print(f"总买入金额={C.total_buy:.2f}  总卖出金额{C.total_sell:.2f}超过额度，跳过买入")
                     continue
 

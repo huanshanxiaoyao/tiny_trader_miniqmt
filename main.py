@@ -7,9 +7,8 @@ from data_provider import DataProvider
 from risk_manager import RiskManager
 from local_account import LocalAccount
 from strategy.strategy_factory import StrategyFactory
-from strategy.strategy_params import STRATEGY_PARAMS, Active_Codes
-from config import ACCOUNT_ID, TRADER_PATH, STRATEGY_CONFIG, DATA_CONFIG
-from stock_code_config import BASKET1, BASKET2, BASKET3, SH50,BJ50
+from strategy.strategy_params import Active_Codes
+from config import ACCOUNT_ID, TRADER_PATH, STRATEGY_CONFIG
 from stock_code_config import BJSE_INDEX, SHSE_INDEX, HS_INDEX
 from my_stock import MyStock
 from logger import logger, tick_logger  # 修改导入语句
@@ -113,11 +112,14 @@ def on_tick_data(ticks):
     # 风险评估
     reviewed_signals = risk_manager.evaluate_signals(all_signals, using_account)
     
-    #实盘实操的时候，需要从trader接口拉取服务器上的账户和交易信息，实盘模拟的时候，再simTrader里面直接调用了
+    #实盘实操的时候，需要从trader接口拉取服务器上的账户和交易信息，实盘模拟的时候，在simTrader里面直接调用了
     #所有这里只对实盘实操的时候生效
     if not using_account.is_simulated and (len(reviewed_signals) > 0 or using_account.need_update()):
         #这里逻辑上可以做成异步，无需阻塞，后面加日志看下具体消耗时间，再决定要不要修改
+        t1 = time.time()
         using_account.update_positions(trader.get_account_info(), trader.get_positions(), trader.get_trades(), trader.get_orders(), id2stock)
+        t2 = time.time()
+        logger.info(f"更新账户信息耗时: {t2 - t1}")
     if not reviewed_signals:
         return
     
@@ -178,8 +180,6 @@ def main(use_sim=False, account_id=ACCOUNT_ID):
             sim_account = SimAccount(account_id)
             trader = SimTrader(sim_account)
 
-            #mini_trader = MiniTrader(TRADER_PATH, account_id)
-            #mini_trader.connect()
             using_account = sim_account
 
         else:
@@ -207,7 +207,7 @@ def main(use_sim=False, account_id=ACCOUNT_ID):
         # 主循环，保持程序运行
         round_count = 0
         while True:
-            time.sleep(0.2)
+            time.sleep(0.5)
             round_count += 1
             
     except KeyboardInterrupt:

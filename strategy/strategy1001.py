@@ -126,6 +126,7 @@ class Strategy1001(BaseStrategy):
         short_atr10 = safe_range.get('short_atr10', 0)
         long_ema55 = safe_range.get('long_ema55', 0)
         long_atr20 = safe_range.get('long_atr20', 0)
+        slope_ema55 = safe_range.get('slope_ema55', 0)
         if short_sma5 == 0 or short_ema8 == 0 or short_atr10 == 0 or long_ema55 == 0 or long_atr20 == 0:
             logger.warning(f"股票 {stock.code} 读取安全区间数值失败，跳过计算")
             return False
@@ -133,8 +134,13 @@ class Strategy1001(BaseStrategy):
         if market_rise < -3:
             logger.info(f"大盘不好，跳过，code:{stock.code}, market_rise:{market_rise}")
             return False
+
+        #Regime Filter
+        if slope_ema55 < -0.09 or current_price < long_ema55 - long_atr20:
+            logger.info(f"当前趋势不好，跳过，code:{stock.code}, slope_ema55:{slope_ema55}")
+            return False
         
-        if current_price > long_ema55 + long_atr20 * 2:
+        if current_price > long_ema55 + long_atr20 * 2.5:
             logger.info(f"当前价格高于长周期EMA55 + 2倍ATR20，跳过，code:{stock.code}, current_price:{current_price}, long_ema55:{long_ema55}, long_atr20:{long_atr20}")
             return False
 
